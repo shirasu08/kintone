@@ -78,6 +78,13 @@ h2{font-family:var(--display);font-weight:700;font-size:16px;margin:0;text-wrap:
 .wk-detail .wh{font-weight:700;color:var(--board-dim);letter-spacing:.04em}
 .wk-detail .ws b{display:block}
 .wk-detail .ws span{color:var(--board-dim)}
+.praise{display:grid;grid-template-columns:52px 1fr;gap:12px;align-items:start;background:var(--accent-soft);border-radius:12px;padding:12px;margin-top:12px}
+.praise .av svg{display:block;width:52px;height:52px}
+.praise .hd{font-family:var(--display);font-weight:900;font-size:16px;line-height:1.4}
+.praise ul{margin:6px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:4px;font-size:14px}
+.praise li{padding-left:16px;position:relative}
+.praise li::before{content:"";position:absolute;left:2px;top:.6em;width:7px;height:7px;border-radius:50%;background:var(--accent)}
+.praise .pr{font-weight:700;color:var(--accent)}
 
 .coach{display:grid;grid-template-columns:64px 1fr;gap:14px;align-items:center}
 .coach .av{width:64px;height:64px}
@@ -191,6 +198,7 @@ textarea.inp{min-height:110px;resize:vertical}
       <div id="woView" hidden>
         <div class="muted small" id="woViewMenu"></div>
         <div id="woViewList"></div>
+        <div class="praise" id="woPraise"></div>
         <div class="row" style="margin-top:10px">
           <button class="btn" id="woEdit">直す</button>
           <button class="btn ghost danger" id="woDel">消す</button>
@@ -431,8 +439,9 @@ const FIG_KEYS = [["core", /レッグレイズ|プランク|腹筋|クランチ|
   ["bench", /ベンチ|チェスト|フライ/], ["pushup", /腕立て|プッシュアップ|ディップ/], ["hinge", /デッド|ルーマニアン|グッドモーニング|ヒップ|スイング/],
   ["lunge", /ランジ|ブルガリアン|ステップ/], ["squat", /スクワット|レッグ|カーフ/], ["pull", /懸垂|チンニング|プルダウン|プルアップ/],
   ["row", /ロー|フェイスプル|シュラッグ/], ["curl", /カール|アーム|トライセプ|プレスダウン|キックバック/], ["press", /ショルダー|プレス|レイズ/]];
+const kindOf = name => (FIG_KEYS.find(([, re]) => re.test(name)) || ["other"])[0];
 function ico(name, sm){
-  const k = (FIG_KEYS.find(([, re]) => re.test(name)) || ["other"])[0], [h, d, extra] = FIG[k];
+  const k = kindOf(name), [h, d, extra] = FIG[k];
   return `<span class="ico${sm ? " sm" : ""}" aria-hidden="true"><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">` +
     `${h ? `<circle cx="${h[0]}" cy="${h[1]}" r="3.6" fill="currentColor" stroke="none"/>` : ""}<path d="${d}"/>${extra || ""}</svg></span>`;
 }
@@ -457,6 +466,58 @@ function coachMsg(c, g){
   if(gap >= 5) return `前回から${gap}日あいてるワン。軽めでもいいから「${nextMenu().name}」を1回やってみようワン。`;
   if(gap === 1) return `きのうはおつかれさまだワン。同じところを続けてやるより、きょうは休むか「${nextMenu().name}」にするのがおすすめだワン。`;
   return `今週はあと${g - c}回だワン。次は「${nextMenu().name}」の番だよ。前回と同じ重さが楽にできたら、＋を1回押してみようワン。`;
+}
+
+/* ---------- praise: what the trainer says about one recorded workout (no AI needed) ---------- */
+const vol = items => items.reduce((a, it) => a + (it.kg || 0) * it.reps * it.sets, 0);
+function bestBefore(name, date){
+  let b = -1;
+  sortedDates().forEach(d => { if(d >= date) return; const w = state.days[d].workout; if(!w) return;
+    w.items.forEach(it => { if(it.name === name && it.kg > b) b = it.kg; }); });
+  return b;
+}
+const PART = {
+  lower: ["下半身", "下半身は打つ・投げる・走るの土台だワン。打球の飛距離も一歩目のスタートもここから変わるよ。"],
+  push: ["胸・肩", "胸と肩は送球の強さと、バットを押し込む力に効くワン。肩まわりのケアも忘れずにね。"],
+  pull: ["背中", "背中はスイングの引き手と、投げたあとのブレーキ役だワン。ケガしにくい体になるよ。"],
+  core: ["体幹", "体幹のひねりはスイングスピードに直結だワン。下半身の力をバットに伝える通り道だよ。"],
+  arm: ["腕", "腕と握る力はバットコントロールに効くワン。最後のひと押しが強くなるよ。"] };
+const PART_OF = { squat:"lower", hinge:"lower", lunge:"lower", bench:"push", pushup:"push", press:"push", pull:"pull", row:"pull", curl:"arm", core:"core", twist:"core" };
+function praise(date){
+  const w = (state.days[date] || {}).workout; if(!w) return null;
+  const seed = [...date].reduce((a, c) => a + c.charCodeAt(0), 0) + w.items.length;
+  const pick = a => a[seed % a.length];
+  const prs = [], ups = [];
+  w.items.forEach(it => {
+    const l = lastFor(it.name, date); if(!l) return;
+    if(it.kg > l.kg) (it.kg > bestBefore(it.name, date) ? prs : ups).push(`${esc(it.name)} ${kgTxt(l.kg)} → <b>${kgTxt(it.kg)}</b>`);
+    else if(it.kg === l.kg && it.reps * it.sets > l.reps * l.sets) ups.push(`${esc(it.name)} ${l.reps}回×${l.sets} → <b>${it.reps}回×${it.sets}</b>`);
+  });
+  const prior = sortedDates().filter(d => d < date && state.days[d].workout);
+  const head = !prior.length ? "記念すべき初記録だワン！プレイボール！"
+    : prs.length ? pick(["自己ベスト更新だワン！特大ホームランや！", "自己ベストが出たワン！スタンドまで飛んでったよ！"])
+    : ups.length ? pick(["前回より伸びてるワン！ナイスバッティング！", "ちゃんと成長してるワン！クリーンヒット！"])
+    : pick(["きょうもしっかり振り切ったワン！ナイスゲーム！", "同じ重さをきっちりこなすのも立派な練習だワン！", "積み重ねがいちばん強いワン。ナイスプレー！"]);
+  const lines = [];
+  prs.forEach(x => lines.push(`<span class="pr">自己ベスト</span> ${x}`));
+  ups.forEach(x => lines.push(`前回より↑ ${x}`));
+  const sets = w.items.reduce((a, it) => a + it.sets, 0), v = vol(w.items);
+  const same = prior.filter(d => state.days[d].workout.menuId && state.days[d].workout.menuId === w.menuId).pop();
+  let vt = `${w.items.length}種目・${sets}セット`;
+  if(v > 0) vt += `、持ち上げた重さの合計は <b>${Math.round(v).toLocaleString()}kg</b>`;
+  if(same && v > 0){
+    const pi = state.days[same].workout.items, names = new Set(pi.map(x => x.name));
+    const cv = vol(w.items.filter(x => names.has(x.name))), pv = vol(pi.filter(x => w.items.some(y => y.name === x.name)));
+    if(pv > 0){ const r = Math.round((cv / pv - 1) * 100); if(r > 0) vt += `（前回の${esc(w.menuName)}とくらべて <b>+${r}%</b>）`; } }
+  lines.push(vt + "。");
+  const cnt = {}; w.items.forEach(it => { const p = PART_OF[kindOf(it.name)]; if(p) cnt[p] = (cnt[p] || 0) + it.sets; });
+  const parts = Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a]);
+  if(parts.length) lines.push(PART[parts[0]][1]);
+  const ws = weekStart(date), n = Object.keys(state.days).filter(d => d <= date && weekStart(d) === ws && state.days[d].workout).length, g = goal();
+  if(n === g) lines.push(`これで今週${g}回目、<b>目標クリア</b>だワン！`);
+  else if(n < g) lines.push(`今週${n}回目。目標まであと${g - n}回だワン。`);
+  else lines.push(`今週${n}回目！目標以上にがんばってるワン。休む日もちゃんとつくってね。`);
+  return { head, lines };
 }
 
 /* ---------- render: scoreboard ---------- */
@@ -523,6 +584,8 @@ function renderToday(){
   if(view){
     $("#woViewMenu").textContent = w.menuName || "";
     $("#woViewList").innerHTML = w.items.map(it => `<div class="sum"><span class="nm">${ico(it.name, true)}${esc(it.name)}</span><span class="num">${itemTxt(it)}</span></div>`).join("");
+    const pz = praise(state.date);
+    $("#woPraise").innerHTML = `<div class="av" aria-hidden="true">${MASCOT}</div><div><div class="hd">${esc(pz.head)}</div><ul>${pz.lines.map(l => `<li>${l}</li>`).join("")}</ul></div>`;
     const del = $("#woDel"); delete del.dataset.armed; del.textContent = "消す";
   } else {
     $("#menuChips").innerHTML = menus().map(m => `<button class="chip" data-menu="${esc(m.id)}" aria-pressed="${m.id === draft.menuId}">${esc(m.name)}</button>`).join("");
@@ -647,7 +710,8 @@ $("#woSave").addEventListener("click", () => {
   if(!items.length){ toast("やった種目に✓をつけてください"); return; }
   const day = state.days[state.date] || (state.days[state.date] = { date: state.date });
   day.workout = { menuId: draft.menuId || "", menuName: draft.menuName || "", items, at: Date.now() };
-  saveDay(state.date); editing = false; draft = null; render(); toast("ナイスプレーだワン！記録したよ");
+  saveDay(state.date); editing = false; draft = null; render(); toast("記録したワン！");
+  const pc = $("#woCard"); if(pc.scrollIntoView) pc.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
 });
 $("#woEdit").addEventListener("click", () => { draft = null; ensureDraft(); editing = true; renderToday(); });
 $("#woCancel").addEventListener("click", () => { draft = null; editing = false; renderToday(); });
