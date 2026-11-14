@@ -340,6 +340,19 @@ function say(text){
   speechSynthesis.speak(u);
 }
 const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
+let DICT = null, micJob = null;
+const inClaude = !!(window.claude && window.claude.use);
+const canMic = () => !!DICT || (!inClaude && !!Rec);
+if(inClaude){
+  window.claude.use("dictation").then(d => {
+    if(!d) return;
+    DICT = d;
+    d.onPartial(({text}) => { if(micJob && matchRate(micJob.target, text) >= 0.6){ micJob.text = text; d.stop().catch(() => {}); } });
+    d.onFinal(({text}) => { if(micJob){ micJob.text = (micJob.text + " " + text).trim(); d.stop().catch(() => {}); } });
+    d.onState(({state}) => { if(state === "idle" && micJob){ const j = micJob; micJob = null; j.done(j.text); } });
+    if(game) render();
+  }).catch(() => {});
+}
 const words = s => s.toLowerCase().replace(/[^a-z0-9' ]/g, " ").split(/\s+/).filter(Boolean);
 function matchRate(target, heard){
   const t = words(target), h = new Set(words(heard));
@@ -410,7 +423,7 @@ function distractors(p, key){
 }
 
 /* ---------- 画面の状態 ---------- */
-let tab = "play", game = null, result = null, bookScene = "all", showHint = false;
+let tab = "play", game = null, result = null, bookScene = "all", showHint = false, askReset = false;
 
 function startGame(menuId){
   const qs = pickPhrases(S.scene, 5);
@@ -521,7 +534,7 @@ function viewGame(){
       ${game.answered ? "" : game.revealed ? `${phraseBlock(q.p)}<div class="qlabel">言えた？ 正直に教えてね</div>
         <div class="two"><button class="big good" data-judge="1">言えた！</button><button class="big sub" data-judge="0">まだむずい</button></div>`
       : `${q.p.tip ? `<div class="tip">ヒント：${esc(q.p.tip)}</div>` : ""}
-        ${Rec ? `<button class="big" data-mic>🎤 マイクで言ってみる</button>` : ""}
+        ${canMic() ? `<button class="big" data-mic>🎤 マイクで言ってみる</button>` : ""}
         ${game.heard ? `<div class="heard">聞こえた英語：「${esc(game.heard)}」…おしい！もう一回いけるワン</div>` : ""}
         <button class="big sub" data-reveal>答えを見る</button>`}`;
   }
@@ -574,7 +587,8 @@ function viewScore(){
   <section class="card"><h2>設定</h2>
     <div class="row spread"><span>読み上げの速さ</span><div class="chips">
       ${[["ゆっくり",0.7],["ふつう",0.85],["速め",1]].map(([n, r]) => `<button class="chip" data-rate="${r}" aria-pressed="${S.rate === r}">${n}</button>`).join("")}</div></div>
-    <button class="danger" data-reset>記録をぜんぶ消す</button>
+    ${askReset ? `<div class="row"><span class="small">記録と能力をぜんぶ消して、最初からやり直す？</span><button class="danger" data-reset-yes>消す</button><button class="chip" data-reset-no>やめる</button></div>`
+      : `<button class="danger" data-reset>記録をぜんぶ消す</button>`}
   </section>`;
 }
 function viewBook(){
@@ -608,10 +622,24 @@ document.addEventListener("click", e => {
   if("home" in d){ result = null; render(); return; }
   if(d.book){ bookScene = d.book; render(); return; }
   if(d.rate){ S.rate = +d.rate; save(); render(); say("Nice to meet you."); return; }
-  if("reset" in d){ if(confirm("記録と能力をぜんぶ消して、最初からやり直しますか？")){ S = fresh(); save(); game = null; result = null; render(); } return; }
+  if("reset" in d){ askReset = true; render(); return; }
+  if("resetNo" in d){ askReset = false; render(); return; }
+  if("resetYes" in d){ askReset = false; S = fresh(); save(); game = null; result = null; render(); return; }
 });
 function listen(btn){
   const q = game.qs[game.i];
+  const judge = heard => {
+    if(!game || game.answered) return;
+    if(matchRate(q.p.en, heard) >= 0.6){ game.revealed = true; answer(true); }
+    else { game.heard = heard || "（うまく聞き取れなかった）"; render(); }
+  };
+  if(DICT){
+    micJob = {target: q.p.en, text: "", done: judge};
+    DICT.start().catch(() => { micJob = null; game.heard = "（マイクが使えなかった）"; render(); });
+    btn.textContent = "🎤 聞いてるワン…話してね"; btn.disabled = true;
+    setTimeout(() => { if(micJob) DICT.stop().catch(() => {}); }, 6000);
+    return;
+  }
   let rec;
   try{ rec = new Rec(); }catch(err){ return; }
   rec.lang = "en-US"; rec.interimResults = false; rec.maxAlternatives = 5;
