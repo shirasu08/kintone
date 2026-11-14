@@ -1,0 +1,631 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="英語キャンプ"><meta name="theme-color" content="#101012">
+<title>トラベル英語キャンプ</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700;900&family=Barlow+Condensed:wght@500;600;700&display=swap">
+<style>
+/* 選手を育てる英語練習帳。1日5問＝1イニング。正解＝ヒットで能力が上がる。デザインは筋トレスコアブックとそろえてある。 */
+:root{
+  --bg:#FFFFFF; --stripe:rgba(17,17,20,.2); --surface:#FFFFFF; --sunken:#EEEEF1; --line:#CFD0D5;
+  --fg:#111114; --muted:#5C5E66;
+  --board:#101012; --board-fg:#FFFFFF; --board-dim:#A9ABB3; --board-line:#3A3B42; --lamp:#FF4257; --lamp-off:#2A2B31; --gold:#F5C542;
+  --accent:#C8102E; --accent-ink:#FFFFFF; --accent-soft:#FBE3E6;
+  --good:#1E7B4A; --good-soft:#E0F2E8; --warn:#A32626;
+  --shadow:0 1px 2px rgba(10,10,15,.08),0 6px 18px rgba(10,10,15,.08);
+  --body:"Zen Kaku Gothic New","Hiragino Sans","Yu Gothic",system-ui,sans-serif;
+  --digits:"Barlow Condensed","Zen Kaku Gothic New","Hiragino Sans",sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0B0B0D; --stripe:rgba(255,255,255,.11); --surface:#17181B; --sunken:#24252B; --line:#383940;
+  --fg:#F2F2F4; --muted:#A6A8B1;
+  --board:#000000; --board-line:#3A3B42; --lamp-off:#26272C;
+  --accent:#FF5A6E; --accent-ink:#2A0508; --accent-soft:#3A1A1F;
+  --good:#6FD09A; --good-soft:#163024; --warn:#FF8A80;
+  --shadow:0 1px 2px rgba(0,0,0,.4); color-scheme:dark } }
+:root[data-theme="dark"]{
+  --bg:#0B0B0D; --stripe:rgba(255,255,255,.11); --surface:#17181B; --sunken:#24252B; --line:#383940;
+  --fg:#F2F2F4; --muted:#A6A8B1;
+  --board:#000000; --board-line:#3A3B42; --lamp-off:#26272C;
+  --accent:#FF5A6E; --accent-ink:#2A0508; --accent-soft:#3A1A1F;
+  --good:#6FD09A; --good-soft:#163024; --warn:#FF8A80;
+  --shadow:0 1px 2px rgba(0,0,0,.4); color-scheme:dark }
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg) repeating-linear-gradient(90deg, var(--stripe) 0 1px, transparent 1px 15px);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.6;font-weight:500;
+  padding-block:max(14px, env(safe-area-inset-top, 0px)) max(40px, env(safe-area-inset-bottom, 0px));padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+button{font:inherit;color:inherit;cursor:pointer}
+[hidden]{display:none!important}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+h1{font-weight:900;font-size:20px;margin:0;letter-spacing:.02em;background:var(--bg);padding:0 8px;border-radius:6px}
+h2{font-weight:700;font-size:16px;margin:0}
+.num{font-family:var(--digits);font-variant-numeric:tabular-nums;font-weight:600}
+.muted{color:var(--muted)} .small{font-size:13px}
+.tabs{display:flex;background:var(--sunken);border-radius:10px;padding:3px;gap:2px}
+.tabs button{border:0;background:transparent;border-radius:8px;padding:6px 14px;font-weight:700;color:var(--muted)}
+.tabs button[aria-selected="true"]{background:var(--surface);color:var(--fg);box-shadow:var(--shadow)}
+.panel{display:flex;flex-direction:column;gap:16px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:12px}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.spread{justify-content:space-between}
+
+/* 選手カード（黒いボード） */
+.board{background:var(--board);color:var(--board-fg);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px;box-shadow:var(--shadow)}
+.board .t{font-weight:700;font-size:12px;letter-spacing:.14em;color:var(--board-dim)}
+.cls{font-weight:900;font-size:24px;line-height:1.2}
+.cond{font-size:13px;font-weight:700;border:1px solid var(--board-line);border-radius:999px;padding:2px 10px;color:var(--board-dim)}
+.cond.hot{color:var(--gold);border-color:var(--gold)}
+.stat{display:grid;grid-template-columns:64px 1fr 30px 40px;gap:10px;align-items:center}
+.stat .lb{font-size:13px;font-weight:700}
+.bar{height:10px;background:var(--lamp-off);border-radius:999px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--lamp);border-radius:999px;transition:width .6s}
+.rank{font-family:var(--digits);font-weight:700;font-size:24px;text-align:center;line-height:1}
+.rank.S,.rank.A{color:var(--gold)}
+.stat .v{font-family:var(--digits);font-size:18px;text-align:right;color:var(--board-dim)}
+.next{font-size:13px;color:var(--board-dim)} .next b{color:var(--board-fg)}
+.week{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--board-dim)}
+.week .d{display:flex;flex-direction:column;align-items:center;gap:3px;flex:1}
+.lamp{width:16px;height:16px;border-radius:50%;background:var(--lamp-off);border:1px solid var(--board-line)}
+.lamp.on{background:var(--lamp);border-color:var(--lamp);box-shadow:0 0 8px var(--lamp)}
+
+/* コーチ */
+.coach{display:grid;grid-template-columns:64px 1fr;gap:14px;align-items:center}
+.coach .av svg{display:block;width:64px;height:64px}
+.who{font-size:12px;color:var(--muted);font-weight:700}
+.bubble{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 14px;min-width:0}
+.bubble::before{content:"";position:absolute;left:-7px;top:50%;width:12px;height:12px;background:var(--surface);border-left:1px solid var(--line);border-bottom:1px solid var(--line);transform:translateY(-50%) rotate(45deg)}
+
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px;font-size:13px;font-weight:700;color:var(--muted)}
+.chip[aria-pressed="true"]{background:var(--board);border-color:var(--board);color:#fff}
+.menus{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.menu{position:relative;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:14px;padding:14px 12px;display:flex;flex-direction:column;gap:4px;box-shadow:var(--shadow)}
+.menu b{font-size:16px}
+.menu .up{font-size:12px;font-weight:700;color:var(--accent)}
+.menu .ds{font-size:12px;color:var(--muted);line-height:1.5}
+.menu.rec{border:2px solid var(--accent)}
+.menu .tag{position:absolute;top:-9px;right:10px;background:var(--accent);color:var(--accent-ink);font-size:11px;font-weight:700;border-radius:999px;padding:1px 8px}
+
+/* 打席 */
+.atbat{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.dots{display:flex;gap:6px}
+.dot{width:22px;height:22px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;font-size:12px;font-weight:900;color:#fff}
+.dot.h{background:var(--accent);border-color:var(--accent)}
+.dot.o{background:var(--muted);border-color:var(--muted)}
+.dot.now{border-color:var(--fg)}
+.qlabel{font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.06em}
+.prompt{font-size:22px;font-weight:900;line-height:1.4}
+.opts{display:flex;flex-direction:column;gap:8px}
+.opt{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:10px 14px;text-align:left;min-height:52px}
+.opt .en{font-weight:700;font-size:17px;display:block}
+.opt .ka{font-size:12px;color:var(--muted);display:block}
+.opt.right{border:2px solid var(--good);background:var(--good-soft)}
+.opt.wrong{border:2px solid var(--warn);opacity:.75}
+.opt:disabled{cursor:default}
+.big{border:0;border-radius:12px;padding:14px 16px;font-weight:900;font-size:17px;background:var(--accent);color:var(--accent-ink);width:100%}
+.big.sub{background:var(--sunken);color:var(--fg)}
+.big.good{background:var(--good);color:var(--surface)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.play{border:1px solid var(--line);background:var(--sunken);border-radius:999px;padding:6px 14px;font-weight:700;font-size:14px;display:inline-flex;gap:6px;align-items:center}
+.play.huge{font-size:18px;padding:16px 22px;background:var(--board);color:#fff;border-color:var(--board);align-self:center}
+.link{border:0;background:none;color:var(--muted);text-decoration:underline;font-size:13px;padding:0;align-self:flex-start}
+.fb{border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.fb.hit{background:var(--good-soft)} .fb.out{background:var(--sunken)}
+.fb .hd{font-weight:900;font-size:20px}
+.fb.hit .hd{color:var(--good)}
+.phr .en{font-size:19px;font-weight:900;line-height:1.35}
+.phr .ka{font-size:14px;font-weight:700;color:var(--accent)}
+.phr .ja{font-size:14px}
+.tip{font-size:13px;color:var(--muted);border-left:3px solid var(--accent);padding-left:8px}
+.heard{font-size:13px;color:var(--muted)}
+
+/* 結果 */
+.res{text-align:center;display:flex;flex-direction:column;gap:6px;align-items:center}
+.res .score{font-family:var(--digits);font-size:44px;font-weight:700;line-height:1}
+.badge{display:inline-block;background:var(--gold);color:#2a2000;font-weight:900;border-radius:999px;padding:3px 14px;font-size:14px}
+.gain{display:flex;justify-content:space-between;padding:6px 0;border-top:1px solid var(--line)}
+.gain:first-child{border-top:0}
+.gain b{color:var(--accent);font-family:var(--digits);font-size:18px}
+.promo{background:var(--board);color:#fff;border-radius:12px;padding:14px;text-align:center;font-weight:900;font-size:18px}
+.promo small{display:block;font-size:12px;color:var(--board-dim);font-weight:700}
+
+/* 成績 */
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.kpi{display:flex;flex-direction:column;align-items:center;gap:2px}
+.kpi .n{font-family:var(--digits);font-size:30px;font-weight:700;line-height:1}
+.kpi .n.red{color:var(--lamp)}
+.kpi .l{font-size:12px;color:var(--board-dim);font-weight:700}
+.ls{width:100%;border-collapse:collapse;table-layout:fixed}
+.ls th,.ls td{border:1px solid var(--board-line);text-align:center;padding:0;height:34px}
+.ls th{font-family:var(--digits);font-size:12px;color:var(--board-dim);font-weight:600;height:26px}
+.ls td{font-family:var(--digits);font-size:20px;font-weight:600}
+.ls .zero{color:var(--board-line)}
+.ls .tdy{color:var(--lamp)}
+
+/* 図鑑 */
+.ph{display:grid;grid-template-columns:1fr auto;gap:4px 10px;padding:10px 0;border-top:1px solid var(--line);align-items:center}
+.ph:first-child{border-top:0}
+.ph .en{font-weight:700;font-size:16px}
+.ph .ka{font-size:12px;color:var(--accent);font-weight:700}
+.ph .ja{font-size:13px;color:var(--muted)}
+.mark{font-size:11px;font-weight:700;border-radius:999px;padding:1px 8px;margin-left:6px;vertical-align:2px;white-space:nowrap}
+.mark.got{background:var(--good-soft);color:var(--good)}
+.mark.mid{background:var(--accent-soft);color:var(--accent)}
+.prog{font-size:13px;color:var(--muted)}
+.danger{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 12px;font-size:13px;color:var(--warn);font-weight:700}
+</style></head><body>
+<div class="wrap">
+  <div class="top">
+    <h1>トラベル英語キャンプ</h1>
+    <div class="tabs" role="tablist">
+      <button role="tab" data-tab="play" aria-selected="true">練習</button>
+      <button role="tab" data-tab="score" aria-selected="false">成績</button>
+      <button role="tab" data-tab="book" aria-selected="false">図鑑</button>
+    </div>
+  </div>
+  <div id="view" class="panel"></div>
+</div>
+<script>
+/* ---------- フレーズ（海外旅行で使う場面） [場面, 英語, カタカナ読み, 意味, ヒント] ---------- */
+const SCENES = [
+  {id:"basic",  name:"あいさつ・基本"},
+  {id:"air",    name:"空港・機内"},
+  {id:"hotel",  name:"ホテル"},
+  {id:"food",   name:"レストラン"},
+  {id:"shop",   name:"買い物"},
+  {id:"move",   name:"道・乗り物"},
+  {id:"help",   name:"困ったとき"},
+  {id:"ball",   name:"野球観戦"},
+];
+const RAW = [
+["basic","Hello.","ハロー","こんにちは","朝でも夜でも使える万能のあいさつ。"],
+["basic","Thank you.","サンキュー","ありがとう","迷ったらとりあえずこれ。言いすぎて困ることはない。"],
+["basic","Excuse me.","エクスキューズ・ミー","すみません（声をかけるとき）","店員さんや通りの人に話しかける最初のひと言。"],
+["basic","I'm sorry.","アイム・ソーリー","ごめんなさい","ぶつかった時など、あやまる時はこっち。"],
+["basic","Nice to meet you.","ナイス・トゥ・ミーチュー","はじめまして","「ミート・ユー」はくっついて「ミーチュー」になる。"],
+["basic","I'm from Japan.","アイム・フロム・ジャパン","日本から来ました","Japanの「パ」を強く言うと通じやすい。"],
+["basic","Yes, please.","イエス・プリーズ","はい、お願いします","すすめられた時の「お願いします」。"],
+["basic","No, thank you.","ノー・サンキュー","いいえ、けっこうです","断る時も「サンキュー」を付けるとていねい。"],
+["basic","Could you say that again?","クッジュー・セイ・ザット・アゲイン？","もう一度言ってもらえますか？","聞き取れへん時の切り札。何回使ってもOK。"],
+["basic","Please speak slowly.","プリーズ・スピーク・スローリー","ゆっくり話してください","これを言えば相手もやさしくなる。"],
+["basic","I don't understand.","アイ・ドント・アンダースタンド","わかりません","わからん時は正直に言うのがいちばん。"],
+["basic","See you!","シー・ユー！","またね！","別れ際に軽く。"],
+
+["air","Here is my passport.","ヒア・イズ・マイ・パスポート","パスポートです","「Here is 〜」＝「〜をどうぞ」。渡す時はこれ。"],
+["air","Sightseeing.","サイトシーイング","観光です","入国審査で旅の目的を聞かれたら、この1語でOK。"],
+["air","For five days.","フォー・ファイブ・デイズ","5日間です","何日いるか聞かれたら。数字を入れかえて使う。"],
+["air","Window seat, please.","ウィンドウ・シート・プリーズ","窓側の席をお願いします","「〜, please」＝「〜をお願いします」。超万能の型。"],
+["air","Aisle seat, please.","アイル・シート・プリーズ","通路側の席をお願いします","Aisleのsは読まへん。「アイル」でOK。"],
+["air","Chicken, please.","チキン・プリーズ","チキンでお願いします","機内食で「チキン？ビーフ？」と聞かれたら。"],
+["air","Can I have some water?","キャナイ・ハブ・サム・ウォーター？","お水をもらえますか？","「Can I have 〜?」＝「〜をもらえる？」。ほしい物を入れかえるだけ。"],
+["air","Where is the gate?","ウェア・イズ・ザ・ゲート？","搭乗口はどこですか？","「Where is 〜?」＝「〜はどこ？」。場所を聞く型。"],
+["air","Where can I get my baggage?","ウェア・キャナイ・ゲット・マイ・バゲッジ？","荷物はどこで受け取れますか？","baggage＝預けた荷物。"],
+["air","I'm staying at this hotel.","アイム・ステイング・アット・ディス・ホテル","このホテルに泊まります","入国審査で聞かれたら、予約画面を見せながら。"],
+["air","Nothing to declare.","ナッシング・トゥ・ディクレア","申告するものはありません","税関で聞かれるお決まりのやりとり。"],
+
+["hotel","I have a reservation.","アイ・ハブ・ア・リザベーション","予約しています","フロントで最初に言うひと言。"],
+["hotel","Check in, please.","チェックイン・プリーズ","チェックインをお願いします","日本語とほぼ同じ。自信持って言おう。"],
+["hotel","My name is Tanaka.","マイ・ネーム・イズ・タナカ","名前は田中です","Tanakaのところを自分の名前に入れかえてな。"],
+["hotel","What time is breakfast?","ワット・タイム・イズ・ブレックファスト？","朝食は何時ですか？","「What time is 〜?」＝「〜は何時？」。"],
+["hotel","What's the Wi-Fi password?","ワッツ・ザ・ワイファイ・パスワード？","Wi-Fiのパスワードは何ですか？","旅行でいちばん使うかもしれへん。"],
+["hotel","Can you keep my bag?","キャン・ユー・キープ・マイ・バッグ？","荷物を預かってもらえますか？","「Can you 〜?」＝「〜してくれる？」。お願いの型。"],
+["hotel","The shower doesn't work.","ザ・シャワー・ダズント・ワーク","シャワーが壊れています","「〜 doesn't work」＝「〜が動かへん」。エアコンでもテレビでも使える。"],
+["hotel","I lost my key.","アイ・ロスト・マイ・キー","カギをなくしました","lost＝なくした。"],
+["hotel","Can I check out late?","キャナイ・チェックアウト・レイト？","遅めにチェックアウトできますか？","late＝遅く。"],
+["hotel","Could you call a taxi?","クッジュー・コール・ア・タクシー？","タクシーを呼んでもらえますか？","「Could you」は「Can you」のていねい版。"],
+
+["food","A table for two, please.","ア・テーブル・フォー・トゥー・プリーズ","2人です（席をお願いします）","人数のところを入れかえる。1人なら one。"],
+["food","Can I see the menu?","キャナイ・シー・ザ・メニュー？","メニューを見せてもらえますか？","menuは「メニュー」より「メニュ」と短く。"],
+["food","What do you recommend?","ワット・ドゥ・ユー・レコメンド？","おすすめは何ですか？","迷ったらこれ。店員さんが喜ぶ。"],
+["food","I'll have this.","アイル・ハブ・ディス","これにします","メニューを指さしながら言えば完ぺき。"],
+["food","Same here.","セイム・ヒア","同じものを（私も同じで）","連れと同じものを頼む時。"],
+["food","No ice, please.","ノー・アイス・プリーズ","氷なしでお願いします","「No 〜, please」＝「〜なしで」。"],
+["food","For here or to go?","フォー・ヒア・オア・トゥ・ゴー？","店内で食べますか？持ち帰りですか？","店員さんがよく聞いてくる質問。聞き取れたら勝ち。"],
+["food","To go, please.","トゥ・ゴー・プリーズ","持ち帰りでお願いします","店内なら「For here」。"],
+["food","It's delicious!","イッツ・デリシャス！","おいしい！","言われたらお店の人もうれしい。"],
+["food","Check, please.","チェック・プリーズ","お会計をお願いします","手を軽く上げて言えばOK。"],
+["food","Can I pay by card?","キャナイ・ペイ・バイ・カード？","カードで払えますか？","現金なら by cash ではなく in cash。"],
+
+["shop","How much is this?","ハウ・マッチ・イズ・ディス？","これはいくらですか？","買い物の最重要フレーズ。"],
+["shop","I'm just looking.","アイム・ジャスト・ルッキング","見てるだけです","「何か探してる？」と聞かれた時の返し。"],
+["shop","Can I try this on?","キャナイ・トライ・ディス・オン？","試着していいですか？","try on＝ためしに着る。"],
+["shop","Do you have a bigger one?","ドゥ・ユー・ハブ・ア・ビガー・ワン？","もっと大きいのはありますか？","「Do you have 〜?」＝「〜ある？」。"],
+["shop","Do you have a smaller one?","ドゥ・ユー・ハブ・ア・スモーラー・ワン？","もっと小さいのはありますか？","bigger（大きい）とセットで覚えよう。"],
+["shop","Do you have this in black?","ドゥ・ユー・ハブ・ディス・イン・ブラック？","これの黒はありますか？","色を入れかえる。白なら white。"],
+["shop","I'll take it.","アイル・テイク・イット","これください（買います）","決めた時のひと言。"],
+["shop","A bag, please.","ア・バッグ・プリーズ","袋をください","海外は袋が有料のことも多い。"],
+["shop","Is it tax-free?","イズ・イット・タックス・フリー？","免税になりますか？","パスポートを持っておこう。"],
+["shop","It's a gift.","イッツ・ア・ギフト","プレゼント用です","包んでくれることもある。"],
+["shop","Receipt, please.","リシート・プリーズ","レシートをください","Receiptのpは読まへん。「リシート」。"],
+
+["move","Where is the station?","ウェア・イズ・ザ・ステーション？","駅はどこですか？","「Where is 〜?」の型、ここでも大活躍。"],
+["move","Where is the restroom?","ウェア・イズ・ザ・レストルーム？","トイレはどこですか？","アメリカでは toilet より restroom。"],
+["move","How do I get to this place?","ハウ・ドゥ・アイ・ゲット・トゥ・ディス・プレイス？","ここへはどう行けばいいですか？","スマホの地図を見せながら言う。"],
+["move","Is it far?","イズ・イット・ファー？","遠いですか？","far＝遠い。"],
+["move","Turn right.","ターン・ライト","右に曲がって","道を教えてもらう時によく聞く。"],
+["move","Turn left.","ターン・レフト","左に曲がって","野球のライト・レフトと同じ！"],
+["move","Go straight.","ゴー・ストレート","まっすぐ行って","ストレート＝まっすぐ。野球と同じや。"],
+["move","One ticket to Boston, please.","ワン・チケット・トゥ・ボストン・プリーズ","ボストンまで切符1枚お願いします","行き先と枚数を入れかえるだけ。"],
+["move","To this address, please.","トゥ・ディス・アドレス・プリーズ","この住所までお願いします","タクシーで住所を見せながら。"],
+["move","Does this bus go downtown?","ダズ・ディス・バス・ゴー・ダウンタウン？","このバスは街の中心に行きますか？","downtown＝街の中心、繁華街。"],
+["move","How long does it take?","ハウ・ロング・ダズ・イット・テイク？","どれくらい時間がかかりますか？","How long＝どれくらいの長さ。"],
+
+["help","Help!","ヘルプ！","助けて！","いざという時は大きな声で。"],
+["help","I'm lost.","アイム・ロスト","道に迷いました","lost＝迷った・なくした。"],
+["help","I lost my wallet.","アイ・ロスト・マイ・ウォレット","財布をなくしました","walletは「ウォレット」。"],
+["help","I feel sick.","アイ・フィール・シック","気分が悪いです","sick＝具合が悪い。"],
+["help","Please call the police.","プリーズ・コール・ザ・ポリス","警察を呼んでください","救急車なら an ambulance。"],
+["help","Does anyone speak Japanese?","ダズ・エニワン・スピーク・ジャパニーズ？","日本語を話せる人はいますか？","空港や大きいホテルなら、いることも多い。"],
+["help","Can you write it down?","キャン・ユー・ライト・イット・ダウン？","書いてもらえますか？","聞き取れへんでも、文字なら読めることがある。"],
+["help","My flight was canceled.","マイ・フライト・ワズ・キャンセルド","飛行機が欠航になりました","カウンターで言えば次の便を探してくれる。"],
+["help","I missed my train.","アイ・ミスト・マイ・トレイン","電車に乗り遅れました","missed＝乗り遅れた。"],
+["help","It's an emergency.","イッツ・アン・エマージェンシー","緊急です","急いでることを伝える。"],
+["help","Wait a minute, please.","ウェイト・ア・ミニット・プリーズ","ちょっと待ってください","あせった時に時間をかせげる。"],
+
+["ball","Where is my seat?","ウェア・イズ・マイ・シート？","私の席はどこですか？","チケットを見せながら係の人に。"],
+["ball","Two hot dogs, please.","トゥー・ホットドッグス・プリーズ","ホットドッグ2つください","球場グルメの定番。数字を入れかえよう。"],
+["ball","One beer, please.","ワン・ビア・プリーズ","ビール1杯ください","年齢確認で身分証を求められることもある。"],
+["ball","Who's pitching today?","フーズ・ピッチング・トゥデイ？","今日の先発は誰ですか？","Who's＝誰が。隣のファンとの会話のきっかけに。"],
+["ball","What's the score?","ワッツ・ザ・スコア？","今、何対何ですか？","トイレから戻った時に。"],
+["ball","Let's go!","レッツ・ゴー！","いけー！","応援はこれでOK。"],
+["ball","Nice catch!","ナイス・キャッチ！","ナイスキャッチ！","日本語と同じ。ちゃんと通じる。"],
+["ball","What a game!","ワット・ア・ゲーム！","すごい試合や！","「What a 〜!」＝「なんて〜なんや！」。"],
+["ball","That's a home run!","ザッツ・ア・ホームラン！","ホームランや！","That's＝それは。"],
+["ball","I'm a big baseball fan.","アイム・ア・ビッグ・ベースボール・ファン","野球が大好きです","big fan＝大ファン。"],
+["ball","Can I take a picture?","キャナイ・テイク・ア・ピクチャー？","写真を撮ってもいいですか？","「Can I 〜?」＝「〜してもいい？」。"],
+["ball","Where is the team store?","ウェア・イズ・ザ・チーム・ストア？","グッズ売り場はどこですか？","ユニフォームやキャップが買える。"],
+];
+const PH = RAW.map(([s,en,ka,ja,tip]) => ({s,en,ka,ja,tip}));
+const sceneName = id => (SCENES.find(x => x.id === id) || {name:"おまかせ"}).name;
+
+/* ---------- 能力・ランク・選手クラス ---------- */
+const STATS = [["memory","覚える力"],["listen","聞く力"],["speak","話す力"],["guts","度胸"]];
+const STAT_NAME = Object.fromEntries(STATS);
+const RANKS = [["S",420],["A",330],["B",250],["C",180],["D",120],["E",70],["F",30],["G",0]];
+const rankOf = v => RANKS.find(([, t]) => v >= t)[0];
+const STAT_MAX = 500;
+const CLASSES = [["練習生",0],["2軍",80],["1軍ベンチ",250],["スタメン",550],["クリーンナップ",950],["海外旅行MVP",1500]];
+function classIdx(total){ let i = 0; CLASSES.forEach(([, t], k) => { if(total >= t) i = k; }); return i; }
+const MENUS = [
+  {id:"memory", name:"フレーズ練習",   up:"覚える力 UP", ds:"日本語を見て、英語を4つから選ぶ"},
+  {id:"listen", name:"リスニング練習", up:"聞く力 UP",   ds:"英語を聞いて、意味を4つから選ぶ"},
+  {id:"speak",  name:"スピーキング練習", up:"話す力・度胸 UP", ds:"日本語を見て、英語を声に出す"},
+  {id:"mix",    name:"おまかせ練習",   up:"ぜんぶ少しずつ UP", ds:"3種類の練習をまぜて5問"},
+];
+const INTERVAL = [0,1,2,4,7,15]; // 正解するたびに次に出るまでの日数がのびる（忘れかけた頃に復習）
+
+/* ---------- 保存 ---------- */
+const KEY = "travelEnglishCamp.v1";
+function fresh(){ return {stats:{memory:0,listen:0,speak:0,guts:0}, cards:{}, days:{}, ab:0, h:0, rate:0.85, scene:"all"}; }
+function load(){ try{ const r = localStorage.getItem(KEY); if(r) return Object.assign(fresh(), JSON.parse(r)); }catch(e){} return fresh(); }
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
+let S = load();
+
+/* ---------- 日付 ---------- */
+const pad = n => String(n).padStart(2,"0");
+const fmt = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const parseD = s => { const [y,m,d] = s.split("-").map(Number); return new Date(y, m-1, d); };
+const today = () => fmt(new Date());
+const addDays = (s, n) => { const d = parseD(s); d.setDate(d.getDate() + n); return fmt(d); };
+function streak(){
+  let d = today(), n = 0;
+  if(!(S.days[d] && S.days[d].ab)) d = addDays(d, -1);
+  while(S.days[d] && S.days[d].ab){ n++; d = addDays(d, -1); }
+  return n;
+}
+function condition(){
+  const s = streak();
+  if(s >= 5) return {name:"絶好調", mult:2, hot:true};
+  if(s >= 2) return {name:"好調", mult:1.5, hot:true};
+  return {name:"ふつう", mult:1, hot:false};
+}
+const total = () => STATS.reduce((a, [k]) => a + S.stats[k], 0);
+const avg = (h, ab) => ab ? (h/ab).toFixed(3).replace(/^0/, "") : "---";
+const learned = list => list.filter(p => (S.cards[p.en]||{}).box >= 3).length;
+
+/* ---------- 読み上げ・マイク ---------- */
+const canSpeak = "speechSynthesis" in window;
+let VOICE = null;
+function pickVoice(){
+  if(!canSpeak) return;
+  const vs = speechSynthesis.getVoices().filter(v => /^en/i.test(v.lang));
+  VOICE = vs.find(v => /en[-_]US/i.test(v.lang) && /Samantha|Google|Natural|Aria|Jenny/i.test(v.name)) || vs.find(v => /en[-_]US/i.test(v.lang)) || vs[0] || null;
+}
+if(canSpeak){ pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
+function say(text){
+  if(!canSpeak) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = "en-US"; if(VOICE) u.voice = VOICE; u.rate = S.rate;
+  speechSynthesis.speak(u);
+}
+const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
+const words = s => s.toLowerCase().replace(/[^a-z0-9' ]/g, " ").split(/\s+/).filter(Boolean);
+function matchRate(target, heard){
+  const t = words(target), h = new Set(words(heard));
+  return t.length ? t.filter(w => h.has(w)).length / t.length : 0;
+}
+
+/* ---------- 小物 ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const shuffle = a => { a = a.slice(); for(let i = a.length-1; i > 0; i--){ const j = Math.floor(Math.random()*(i+1)); [a[i],a[j]] = [a[j],a[i]]; } return a; };
+const playBtn = (en, cls = "") => canSpeak ? `<button class="play ${cls}" data-say="${esc(en)}">▶ 聞く</button>` : "";
+
+/* ---------- コーチ（筋トレスコアブックと同じシュナマル。今回は野球帽つき） ---------- */
+const MASCOT = `<svg viewBox="0 0 96 96" role="img" aria-label="シュナマルコーチ"><circle cx="48" cy="48" r="46" fill="var(--accent-soft)"/>
+<path d="M20 34c-9 2-12 16-8 28 2 6 8 6 10 0l4-22z" fill="#8B8F98"/><path d="M76 34c9 2 12 16 8 28-2 6-8 6-10 0l-4-22z" fill="#8B8F98"/>
+<path d="M48 16c-17 0-28 11-28 27 0 9 3 15 7 19h42c4-4 7-10 7-19 0-16-11-27-28-27z" fill="#B9BDC6"/>
+<path d="M30 54c-5 6-6 16-1 23 3 5 9 4 11 1 3 4 13 4 16 0 2 3 8 4 11-1 5-7 4-17-1-23-5-7-13-9-18-9s-13 2-18 9z" fill="#FFFDF8"/>
+<path d="M27 37c3-6 10-8 15-5-1 4-7 8-14 9z" fill="#FFFDF8"/><path d="M69 37c-3-6-10-8-15-5 1 4 7 8 14 9z" fill="#FFFDF8"/>
+<circle cx="37" cy="44" r="4" fill="#2B1D12"/><circle cx="59" cy="44" r="4" fill="#2B1D12"/><circle cx="38.3" cy="42.6" r="1.3" fill="#fff"/><circle cx="60.3" cy="42.6" r="1.3" fill="#fff"/>
+<ellipse cx="48" cy="54" rx="5.5" ry="4" fill="#2B1D12"/><path d="M48 58v4M42 64c2 3 5 3 6-1 1 4 4 4 6 1" fill="none" stroke="#2B1D12" stroke-width="2" stroke-linecap="round"/>
+<path d="M44.5 66c0 5 7 5 7 0z" fill="#F2788C"/>
+<path d="M25 31c0-13 10-20 23-20s23 7 23 20z" fill="#C8102E"/><path d="M21 31c8-4 46-4 54 0-8 4-46 4-54 0z" fill="#9E0C24"/>
+<circle cx="48" cy="11.5" r="2.2" fill="#9E0C24"/><text x="48" y="27" text-anchor="middle" font-size="11" font-weight="900" fill="#fff" font-family="system-ui,sans-serif">E</text>
+<path d="M30 84c6-5 30-5 36 0-4 6-32 6-36 0z" fill="#16161A"/><circle cx="48" cy="85" r="3.5" fill="#E8203A"/></svg>`;
+const coachBox = msg => `<div class="coach"><div class="av">${MASCOT}</div><div class="bubble"><div class="who">シュナマルコーチ</div><div>${msg}</div></div></div>`;
+
+function weakest(){
+  const k = ["memory","listen","speak"].reduce((a, b) => S.stats[b] < S.stats[a] ? b : a);
+  return MENUS.find(m => m.id === k);
+}
+function homeMsg(){
+  const ds = Object.keys(S.days).filter(d => S.days[d].ab).sort();
+  if(!ds.length) return "はじめまして、コーチのシュナマルだワン！ここは海外旅行で使える英語を身につけるキャンプだよ。1日5問、5分だけでOK。まずは「フレーズ練習」で1イニングやってみようワン！";
+  const t = today(), last = ds[ds.length-1], gap = Math.round((parseD(t) - parseD(last)) / 864e5);
+  if(last === t) return `きょうはもう${S.days[t].ab}打席立ったワン！ナイスバッティング。もう1イニングやってもいいし、きょうはここまでで全然OKだワン。`;
+  if(gap >= 3) return `おかえりだワン！${gap}日ぶりだね。休んでも能力は下がらないから安心してね。まずは1イニングだけ、軽くいこうワン。`;
+  const w = weakest();
+  return `きょうも来てくれてうれしいワン！いちばん伸びしろがあるのは「${STAT_NAME[w.id]}」。「${w.name}」がおすすめだワン。`;
+}
+function resultMsg(h, n, promoted){
+  if(promoted) return `昇格おめでとうだワン！コツコツじゃなくても、来てくれた日の積み重ねがちゃんと力になってるワン。`;
+  if(h === n) return "全打席ヒット！きょうのキミは最強だワン！";
+  if(h >= 3) return "猛打賞だワン！この調子なら、海外でもちゃんと通じるよ。";
+  if(h >= 1) return "ナイスヒット！凡打だったフレーズは、あした優先して出すから、もう1回チャンスがあるワン。";
+  return "きょうはノーヒットでも、打席に立ったことがえらいワン！まちがえたフレーズは覚えやすい順にまた出すから安心してね。";
+}
+
+/* ---------- 問題づくり ---------- */
+function pickPhrases(scene, n){
+  const pool = scene === "all" ? PH : PH.filter(p => p.s === scene);
+  const t = today();
+  const due = shuffle(pool.filter(p => S.cards[p.en] && S.cards[p.en].due <= t)).sort((a, b) => S.cards[a.en].box - S.cards[b.en].box);
+  const fresh = pool.filter(p => !S.cards[p.en]);
+  const rest = shuffle(pool.filter(p => S.cards[p.en] && S.cards[p.en].due > t));
+  const out = [];
+  for(const p of due.slice(0, 3)) out.push(p);
+  for(const p of fresh){ if(out.length >= n) break; out.push(p); }
+  for(const p of due.slice(3)){ if(out.length >= n) break; out.push(p); }
+  for(const p of rest){ if(out.length >= n) break; out.push(p); }
+  return shuffle(out);
+}
+function distractors(p, key){
+  const same = shuffle(PH.filter(q => q.s === p.s && q[key] !== p[key]));
+  const other = shuffle(PH.filter(q => q.s !== p.s && q[key] !== p[key]));
+  const out = [];
+  for(const q of same.concat(other)){ if(out.length >= 3) break; if(!out.some(o => o[key] === q[key])) out.push(q); }
+  return shuffle(out.concat([p]));
+}
+
+/* ---------- 画面の状態 ---------- */
+let tab = "play", game = null, result = null, bookScene = "all", showHint = false;
+
+function startGame(menuId){
+  const qs = pickPhrases(S.scene, 5);
+  const types = menuId === "mix" ? shuffle(["memory","listen","speak","memory","listen"]) : qs.map(() => menuId);
+  game = {menu: menuId, i: 0, qs: qs.map((p, k) => ({p, type: types[k], opts: null})), res: [], gains: {memory:0,listen:0,speak:0,guts:0},
+          before: classIdx(total()), firstToday: !(S.days[today()] && S.days[today()].ab), answered: null, revealed: false, heard: ""};
+  showHint = false; result = null;
+  render();
+}
+function gain(stat, n){
+  const add = Math.min(STAT_MAX - S.stats[stat], n);
+  S.stats[stat] += add; game.gains[stat] += add;
+}
+function answer(hit){
+  const q = game.qs[game.i], c = condition(), t = today();
+  const card = S.cards[q.p.en] || {box: 0, due: t, h: 0, ab: 0};
+  card.ab++;
+  if(hit){ card.h++; card.box = Math.min(5, card.box + 1); card.due = addDays(t, INTERVAL[card.box]); }
+  else { card.box = 0; card.due = addDays(t, 1); }
+  S.cards[q.p.en] = card;
+  gain(q.type, hit ? Math.round(4 * c.mult) : 1);
+  if(q.type === "speak") gain("guts", 1);
+  game.res.push(hit); game.answered = hit ? "hit" : "out";
+  save(); render();
+  if(q.type !== "listen") say(q.p.en);
+}
+function nextQ(){
+  game.i++; game.answered = null; game.revealed = false; game.heard = ""; showHint = false;
+  if(game.i >= game.qs.length) return finish();
+  render();
+}
+function finish(){
+  const t = today(), h = game.res.filter(Boolean).length, n = game.res.length;
+  if(game.firstToday) gain("guts", 3);
+  const d = S.days[t] || {ab: 0, h: 0}; d.ab += n; d.h += h; S.days[t] = d;
+  S.ab += n; S.h += h;
+  save();
+  const after = classIdx(total());
+  result = {h, n, menu: game.menu, gains: game.gains, promoted: after > game.before ? CLASSES[after][0] : null};
+  game = null; render(); window.scrollTo(0, 0);
+}
+
+/* ---------- 描画 ---------- */
+function render(){
+  document.querySelectorAll(".tabs button").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === tab));
+  const v = $("#view");
+  if(tab === "score") v.innerHTML = viewScore();
+  else if(tab === "book") v.innerHTML = viewBook();
+  else if(game) v.innerHTML = viewGame();
+  else if(result) v.innerHTML = viewResult();
+  else v.innerHTML = viewHome();
+}
+function playerCard(){
+  const tot = total(), ci = classIdx(tot), c = condition(), nx = CLASSES[ci+1];
+  const stats = STATS.map(([k, name]) => { const val = S.stats[k], r = rankOf(val);
+    return `<div class="stat"><span class="lb">${name}</span><span class="bar"><i style="width:${Math.max(2, val/STAT_MAX*100)}%"></i></span><span class="rank ${r}">${r}</span><span class="v num">${val}</span></div>`; }).join("");
+  const week = Array.from({length: 7}, (_, k) => { const d = addDays(today(), k - 6), on = S.days[d] && S.days[d].ab;
+    return `<span class="d"><span class="lamp${on ? " on" : ""}"></span>${"日月火水木金土"[parseD(d).getDay()]}</span>`; }).join("");
+  return `<section class="board" aria-label="選手カード">
+    <div class="row spread"><span class="t">PLAYER</span><span class="cond${c.hot ? " hot" : ""}">調子：${c.name}${c.mult > 1 ? `（経験×${c.mult}）` : ""}</span></div>
+    <div class="cls">${CLASSES[ci][0]}</div>
+    ${stats}
+    <div class="next">${nx ? `「${nx[0]}」まで あと <b class="num">${nx[1] - tot}</b>` : "最高ランク到達！"}</div>
+    <div class="week">${week}</div>
+  </section>`;
+}
+function viewHome(){
+  const rec = Object.keys(S.days).length ? weakest().id : "memory";
+  const chips = [{id:"all", name:"おまかせ"}].concat(SCENES).map(s =>
+    `<button class="chip" data-scene="${s.id}" aria-pressed="${S.scene === s.id}">${s.name}</button>`).join("");
+  const menus = MENUS.map(m => `<button class="menu${m.id === rec ? " rec" : ""}" data-start="${m.id}">${m.id === rec ? '<span class="tag">コーチのおすすめ</span>' : ""}
+    <b>${m.name}</b><span class="up">${m.up}</span><span class="ds">${m.ds}</span></button>`).join("");
+  return `${playerCard()}${coachBox(homeMsg())}
+  <section class="card"><h2>場面をえらぶ</h2><div class="chips">${chips}</div></section>
+  <section class="card"><div class="row spread"><h2>きょうの練習（5問＝1イニング）</h2></div><div class="menus">${menus}</div>
+  ${canSpeak ? "" : '<p class="small muted">※ このブラウザは英語の読み上げに対応していないため、リスニングは文字で出題します。</p>'}</section>`;
+}
+function dots(){
+  return `<div class="dots">${game.qs.map((_, k) => { const r = game.res[k];
+    return `<span class="dot${r === true ? " h" : r === false ? " o" : ""}${k === game.i && r === undefined ? " now" : ""}">${r === true ? "H" : r === false ? "×" : ""}</span>`; }).join("")}</div>`;
+}
+function phraseBlock(p){
+  return `<div class="phr"><div class="row spread"><span class="en">${esc(p.en)}</span>${playBtn(p.en)}</div>
+    <div class="ka">${esc(p.ka)}</div><div class="ja">${esc(p.ja)}</div>${p.tip ? `<div class="tip">${esc(p.tip)}</div>` : ""}</div>`;
+}
+function feedback(q){
+  const hit = game.answered === "hit";
+  return `<div class="fb ${hit ? "hit" : "out"}"><div class="hd">${hit ? "ヒット！" : "凡打…"}</div>
+    <div class="small">${hit ? `${STAT_NAME[q.type]}が上がった！` : "でも経験にはなったワン。あしたもう1回出るよ。"}</div>${phraseBlock(q.p)}</div>
+    <button class="big" data-next>${game.i + 1 >= game.qs.length ? "試合終了！結果を見る" : "次の打席へ"}</button>`;
+}
+function viewGame(){
+  const q = game.qs[game.i];
+  let body = "";
+  if(q.type === "memory"){
+    q.opts = q.opts || distractors(q.p, "en");
+    body = `<div class="qlabel">この日本語、英語でなんて言う？</div><div class="prompt">${esc(q.p.ja)}</div>
+      <div class="opts">${q.opts.map((o, k) => optBtn(k, `<span class="en">${esc(o.en)}</span><span class="ka">${esc(o.ka)}</span>`, o === q.p)).join("")}</div>`;
+  } else if(q.type === "listen"){
+    q.opts = q.opts || distractors(q.p, "ja");
+    const hint = !canSpeak || showHint || game.answered;
+    body = `<div class="qlabel">英語を聞いて、意味をえらんでね</div>
+      ${canSpeak ? `<button class="play huge" data-say="${esc(q.p.en)}">▶ もう一回聞く</button>` : ""}
+      ${hint ? `<div class="phr" style="text-align:center"><div class="en">${esc(q.p.en)}</div><div class="ka">${esc(q.p.ka)}</div></div>` : `<button class="link" data-hint>聞き取れへん時は文字を見る（ヒント）</button>`}
+      <div class="opts">${q.opts.map((o, k) => optBtn(k, `<span class="en" style="font-size:16px">${esc(o.ja)}</span>`, o === q.p)).join("")}</div>`;
+  } else {
+    body = `<div class="qlabel">この日本語、英語で声に出して言ってみよう</div><div class="prompt">${esc(q.p.ja)}</div>
+      ${game.answered ? "" : game.revealed ? `${phraseBlock(q.p)}<div class="qlabel">言えた？ 正直に教えてね</div>
+        <div class="two"><button class="big good" data-judge="1">言えた！</button><button class="big sub" data-judge="0">まだむずい</button></div>`
+      : `${q.p.tip ? `<div class="tip">ヒント：${esc(q.p.tip)}</div>` : ""}
+        ${Rec ? `<button class="big" data-mic>🎤 マイクで言ってみる</button>` : ""}
+        ${game.heard ? `<div class="heard">聞こえた英語：「${esc(game.heard)}」…おしい！もう一回いけるワン</div>` : ""}
+        <button class="big sub" data-reveal>答えを見る</button>`}`;
+  }
+  return `<section class="card">
+    <div class="atbat"><span class="qlabel">第${game.i + 1}打席 ／ ${esc(sceneName(S.scene))}</span>${dots()}</div>
+    ${body}${game.answered ? feedback(q) : ""}</section>
+    ${game.answered ? "" : `<button class="link" data-quit>試合をやめる（ここまでの記録は保存しない）</button>`}`;
+}
+function optBtn(k, inner, correct){
+  let cls = "opt";
+  if(game.answered){ if(correct) cls += " right"; else if(game.picked === k) cls += " wrong"; }
+  return `<button class="${cls}" data-opt="${k}" ${game.answered ? "disabled" : ""}>${inner}</button>`;
+}
+function viewResult(){
+  const r = result;
+  const gains = STATS.filter(([k]) => r.gains[k]).map(([k, n]) => `<div class="gain"><span>${n}</span><b>+${r.gains[k]}</b></div>`).join("");
+  return `<section class="card res">
+    <div class="qlabel">試合終了</div>
+    <div class="score">${r.n}打数${r.h}安打</div>
+    ${r.h === r.n ? '<span class="badge">全打席ヒット</span>' : r.h >= 3 ? '<span class="badge">猛打賞</span>' : ""}
+  </section>
+  ${r.promoted ? `<div class="promo"><small>昇格！</small>「${r.promoted}」になった！</div>` : ""}
+  <section class="card"><h2>のびた能力</h2><div>${gains || '<p class="muted small">今回はのびなかったけど、記録はついてるワン</p>'}</div></section>
+  ${coachBox(resultMsg(r.h, r.n, r.promoted))}
+  <div class="two"><button class="big" data-again>もう1イニング</button><button class="big sub" data-home>きょうはここまで</button></div>`;
+}
+function viewScore(){
+  const days = Object.keys(S.days).filter(d => S.days[d].ab);
+  const t = today();
+  const two = [0, 1].map(w => { const ds = Array.from({length: 7}, (_, k) => addDays(t, -13 + w*7 + k));
+    return `<tr>${ds.map(d => `<th>${parseD(d).getMonth()+1}/${parseD(d).getDate()}</th>`).join("")}</tr>
+    <tr>${ds.map(d => { const x = S.days[d]; return `<td class="${x && x.ab ? (d === t ? "tdy" : "") : "zero"}">${x && x.ab ? x.h : "-"}</td>`; }).join("")}</tr>`; }).join("");
+  const bySc = SCENES.map(s => { const list = PH.filter(p => p.s === s.id);
+    return `<div class="gain"><span>${s.name}</span><span class="num">${learned(list)} / ${list.length}</span></div>`; }).join("");
+  return `<section class="board">
+    <span class="t">SEASON STATS</span>
+    <div class="kpis">
+      <div class="kpi"><span class="n red">${avg(S.h, S.ab)}</span><span class="l">通算打率</span></div>
+      <div class="kpi"><span class="n">${S.h}</span><span class="l">安打</span></div>
+      <div class="kpi"><span class="n">${S.ab}</span><span class="l">打数</span></div>
+      <div class="kpi"><span class="n">${days.length}</span><span class="l">出場日数</span></div>
+      <div class="kpi"><span class="n">${streak()}</span><span class="l">連続出場</span></div>
+      <div class="kpi"><span class="n">${learned(PH)}</span><span class="l">覚えたフレーズ</span></div>
+    </div>
+    <span class="t">直近2週間の安打数</span>
+    <table class="ls">${two}</table>
+  </section>
+  <section class="card"><h2>場面ごとの覚えたフレーズ</h2><div>${bySc}</div>
+    <p class="small muted">3回つづけてヒットしたフレーズを「覚えた」にしてるワン。</p></section>
+  <section class="card"><h2>設定</h2>
+    <div class="row spread"><span>読み上げの速さ</span><div class="chips">
+      ${[["ゆっくり",0.7],["ふつう",0.85],["速め",1]].map(([n, r]) => `<button class="chip" data-rate="${r}" aria-pressed="${S.rate === r}">${n}</button>`).join("")}</div></div>
+    <button class="danger" data-reset>記録をぜんぶ消す</button>
+  </section>`;
+}
+function viewBook(){
+  const chips = [{id:"all", name:"ぜんぶ"}].concat(SCENES).map(s =>
+    `<button class="chip" data-book="${s.id}" aria-pressed="${bookScene === s.id}">${s.name}</button>`).join("");
+  const list = bookScene === "all" ? PH : PH.filter(p => p.s === bookScene);
+  const rows = list.map(p => { const c = S.cards[p.en];
+    const mk = c ? (c.box >= 3 ? '<span class="mark got">覚えた</span>' : '<span class="mark mid">練習中</span>') : "";
+    return `<div class="ph"><div><div class="en">${esc(p.en)}${mk}</div><div class="ka">${esc(p.ka)}</div><div class="ja">${esc(p.ja)}</div></div>${playBtn(p.en)}</div>`; }).join("");
+  return `<section class="card"><div class="chips">${chips}</div>
+    <div class="prog">覚えた ${learned(list)} / ${list.length}</div><div>${rows}</div></section>`;
+}
+
+/* ---------- 操作 ---------- */
+document.addEventListener("click", e => {
+  const b = e.target.closest("button"); if(!b) return;
+  const d = b.dataset;
+  if(d.tab){ tab = d.tab; render(); return; }
+  if(d.say){ say(d.say); return; }
+  if(d.scene){ S.scene = d.scene; save(); render(); return; }
+  if(d.start){ startGame(d.start); return; }
+  if(d.opt !== undefined && game && !game.answered){
+    const q = game.qs[game.i]; game.picked = +d.opt; answer(q.opts[+d.opt] === q.p); return; }
+  if("hint" in d){ showHint = true; render(); return; }
+  if("reveal" in d){ game.revealed = true; render(); say(game.qs[game.i].p.en); return; }
+  if(d.judge !== undefined){ answer(d.judge === "1"); return; }
+  if("mic" in d){ listen(b); return; }
+  if("next" in d){ nextQ(); window.scrollTo(0, 0); return; }
+  if("quit" in d){ game = null; render(); return; }
+  if("again" in d){ const m = result.menu || "mix"; result = null; startGame(m); return; }
+  if("home" in d){ result = null; render(); return; }
+  if(d.book){ bookScene = d.book; render(); return; }
+  if(d.rate){ S.rate = +d.rate; save(); render(); say("Nice to meet you."); return; }
+  if("reset" in d){ if(confirm("記録と能力をぜんぶ消して、最初からやり直しますか？")){ S = fresh(); save(); game = null; result = null; render(); } return; }
+});
+function listen(btn){
+  const q = game.qs[game.i];
+  let rec;
+  try{ rec = new Rec(); }catch(err){ return; }
+  rec.lang = "en-US"; rec.interimResults = false; rec.maxAlternatives = 5;
+  btn.textContent = "🎤 聞いてるワン…話してね"; btn.disabled = true;
+  rec.onresult = ev => {
+    const alts = Array.from(ev.results[0]).map(a => a.transcript);
+    const best = alts.reduce((a, b) => matchRate(q.p.en, b) > matchRate(q.p.en, a) ? b : a);
+    if(matchRate(q.p.en, best) >= 0.6){ game.revealed = true; answer(true); }
+    else { game.heard = best; render(); }
+  };
+  rec.onerror = () => { game.heard = game.heard || "（うまく聞き取れなかった）"; render(); };
+  rec.onend = () => { if(game && !game.answered && btn.isConnected){ btn.disabled = false; btn.textContent = "🎤 マイクで言ってみる"; } };
+  rec.start();
+}
+render();
+</script>
+</body></html>
