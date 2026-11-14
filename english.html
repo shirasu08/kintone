@@ -152,6 +152,11 @@ h2{font-weight:700;font-size:16px;margin:0}
 .mark.got{background:var(--good-soft);color:var(--good)}
 .mark.mid{background:var(--accent-soft);color:var(--accent)}
 .prog{font-size:13px;color:var(--muted)}
+.toast{position:fixed;left:0;right:0;bottom:0;margin:0 auto;max-width:560px;z-index:20;background:var(--board);color:#fff;border-radius:14px 14px 0 0;font-size:13px;line-height:1.7;
+  padding:14px max(16px, env(safe-area-inset-left, 0px)) calc(14px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-right, 0px));display:flex;flex-direction:column;gap:8px;box-shadow:var(--shadow)}
+.toast .link{color:var(--board-dim)}
+.note{font-size:13px;background:var(--accent-soft);border-radius:10px;padding:10px 12px}
+.note a{color:var(--accent);font-weight:700;word-break:break-all}
 .danger{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 12px;font-size:13px;color:var(--warn);font-weight:700}
 </style></head><body>
 <div class="wrap">
@@ -164,6 +169,7 @@ h2{font-weight:700;font-size:16px;margin:0}
     </div>
   </div>
   <div id="view" class="panel"></div>
+  <div id="toast" class="toast" role="status" hidden></div>
 </div>
 <script>
 /* ---------- フレーズ（海外旅行で使う場面） [場面, 英語, カタカナ読み, 意味, ヒント] ---------- */
@@ -332,12 +338,38 @@ function pickVoice(){
   VOICE = vs.find(v => /en[-_]US/i.test(v.lang) && /Samantha|Google|Natural|Aria|Jenny/i.test(v.name)) || vs.find(v => /en[-_]US/i.test(v.lang)) || vs[0] || null;
 }
 if(canSpeak){ pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
+/* iPhoneは最初のタップの中で一度しゃべらせないと音が出ないことがあるので、最初のタッチで無音の読み上げをして「起こして」おく */
+let unlocked = false;
+function unlockSpeech(){
+  if(unlocked || !canSpeak) return;
+  unlocked = true;
+  try{ const u = new SpeechSynthesisUtterance(" "); u.volume = 0; u.lang = "en-US"; speechSynthesis.speak(u); }catch(e){}
+}
+document.addEventListener("touchend", unlockSpeech, {passive: true, capture: true});
+document.addEventListener("click", unlockSpeech, {capture: true});
+let utter = null, sayTimer = null; // utterを外に持っておかないと、Androidのchromeで途中で消えて鳴らないことがある
 function say(text){
-  if(!canSpeak) return;
-  speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(text);
-  u.lang = "en-US"; if(VOICE) u.voice = VOICE; u.rate = S.rate;
-  speechSynthesis.speak(u);
+  if(!canSpeak){ toast(SOUND_HELP); return; }
+  try{
+    if(speechSynthesis.speaking || speechSynthesis.pending) speechSynthesis.cancel();
+    if(speechSynthesis.paused) speechSynthesis.resume();
+    if(!VOICE) pickVoice();
+    utter = new SpeechSynthesisUtterance(text);
+    utter.lang = "en-US"; if(VOICE) utter.voice = VOICE; utter.rate = S.rate; utter.volume = 1;
+    clearTimeout(sayTimer);
+    utter.onstart = () => clearTimeout(sayTimer);
+    utter.onerror = ev => { clearTimeout(sayTimer); if(ev.error !== "interrupted" && ev.error !== "canceled") toast(SOUND_HELP); };
+    speechSynthesis.speak(utter);
+    sayTimer = setTimeout(() => { if(!speechSynthesis.speaking) toast(SOUND_HELP); }, 3000);
+  }catch(e){ toast(SOUND_HELP); }
+}
+const PAGES_URL = "https://shirasu08.github.io/kintone/english.html";
+const SOUND_HELP = `音が出えへん時はこれを確認してね：<br>・iPhoneは本体横のスイッチでマナーモード（消音）をオフにして、音量を上げる<br>・Androidは音量（メディアの音量）を上げる。設定の「テキスト読み上げ」で英語の音声データを入れる<br>・LINEなどのアプリの中で開いてたら、SafariやChromeで開き直す`;
+let toastTimer = null;
+function toast(html){
+  const t = $("#toast"); if(!t) return;
+  t.innerHTML = html + `<button class="link" data-toast-close>とじる</button>`; t.hidden = false;
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 12000);
 }
 const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
 let DICT = null, micJob = null;
@@ -499,7 +531,8 @@ function viewHome(){
   return `${playerCard()}${coachBox(homeMsg())}
   <section class="card"><h2>場面をえらぶ</h2><div class="chips">${chips}</div></section>
   <section class="card"><div class="row spread"><h2>きょうの練習（5問＝1イニング）</h2></div><div class="menus">${menus}</div>
-  ${canSpeak ? "" : '<p class="small muted">※ このブラウザは英語の読み上げに対応していないため、リスニングは文字で出題します。</p>'}</section>`;
+  ${canSpeak ? "" : '<p class="small muted">※ このブラウザは英語の読み上げに対応していないため、リスニングは文字で出題します。</p>'}</section>
+  ${inClaude ? `<div class="note">スマホで音やマイクがうまく使えへん時は、こっちのページで開いてな（記録は別々になるよ）：<br><a href="${PAGES_URL}" target="_blank" rel="noopener">${PAGES_URL}</a></div>` : ""}`;
 }
 function dots(){
   return `<div class="dots">${game.qs.map((_, k) => { const r = game.res[k];
@@ -534,8 +567,8 @@ function viewGame(){
       ${game.answered ? "" : game.revealed ? `${phraseBlock(q.p)}<div class="qlabel">言えた？ 正直に教えてね</div>
         <div class="two"><button class="big good" data-judge="1">言えた！</button><button class="big sub" data-judge="0">まだむずい</button></div>`
       : `${q.p.tip ? `<div class="tip">ヒント：${esc(q.p.tip)}</div>` : ""}
-        ${canMic() ? `<button class="big" data-mic>🎤 マイクで言ってみる</button>` : ""}
-        ${game.heard ? `<div class="heard">聞こえた英語：「${esc(game.heard)}」…おしい！もう一回いけるワン</div>` : ""}
+        ${canMic() ? `<button class="big" data-mic>🎤 マイクで言ってみる</button>` : `<div class="note">${inClaude ? `マイク判定は、スマホならこっちのページで使えるワン：<br><a href="${PAGES_URL}" target="_blank" rel="noopener">${PAGES_URL}</a>` : "このブラウザはマイク判定に対応してへんワン。iPhoneはSafari、AndroidはChromeで開くと使えるよ。いまは声に出して言ってから「答えを見る」で確かめてね。"}</div>`}
+        ${game.heard ? `<div class="heard">${game.heard.startsWith("（") ? esc(game.heard) + "…もう一回いけるワン" : `聞こえた英語：「${esc(game.heard)}」…おしい！もう一回いけるワン`}</div>` : ""}
         <button class="big sub" data-reveal>答えを見る</button>`}`;
   }
   return `<section class="card">
@@ -587,6 +620,7 @@ function viewScore(){
   <section class="card"><h2>設定</h2>
     <div class="row spread"><span>読み上げの速さ</span><div class="chips">
       ${[["ゆっくり",0.7],["ふつう",0.85],["速め",1]].map(([n, r]) => `<button class="chip" data-rate="${r}" aria-pressed="${S.rate === r}">${n}</button>`).join("")}</div></div>
+    <div class="row"><button class="play" data-soundtest>🔊 音のテスト</button><span class="small muted">「Hello! Nice to meet you.」と聞こえたらOK</span></div>
     ${askReset ? `<div class="row"><span class="small">記録と能力をぜんぶ消して、最初からやり直す？</span><button class="danger" data-reset-yes>消す</button><button class="chip" data-reset-no>やめる</button></div>`
       : `<button class="danger" data-reset>記録をぜんぶ消す</button>`}
   </section>`;
@@ -608,6 +642,8 @@ document.addEventListener("click", e => {
   const d = b.dataset;
   if(d.tab){ tab = d.tab; render(); return; }
   if(d.say){ say(d.say); return; }
+  if("soundtest" in d){ say("Hello! Nice to meet you."); return; }
+  if("toastClose" in d){ $("#toast").hidden = true; return; }
   if(d.scene){ S.scene = d.scene; save(); render(); return; }
   if(d.start){ startGame(d.start); return; }
   if(d.opt !== undefined && game && !game.answered){
@@ -644,15 +680,28 @@ function listen(btn){
   try{ rec = new Rec(); }catch(err){ return; }
   rec.lang = "en-US"; rec.interimResults = false; rec.maxAlternatives = 5;
   btn.textContent = "🎤 聞いてるワン…話してね"; btn.disabled = true;
+  if(canSpeak && (speechSynthesis.speaking || speechSynthesis.pending)) speechSynthesis.cancel();
+  let got = false;
+  const stopT = setTimeout(() => { try{ rec.stop(); }catch(e){} }, 7000);
   rec.onresult = ev => {
+    got = true; clearTimeout(stopT);
     const alts = Array.from(ev.results[0]).map(a => a.transcript);
     const best = alts.reduce((a, b) => matchRate(q.p.en, b) > matchRate(q.p.en, a) ? b : a);
-    if(matchRate(q.p.en, best) >= 0.6){ game.revealed = true; answer(true); }
-    else { game.heard = best; render(); }
+    judge(best);
   };
-  rec.onerror = () => { game.heard = game.heard || "（うまく聞き取れなかった）"; render(); };
-  rec.onend = () => { if(game && !game.answered && btn.isConnected){ btn.disabled = false; btn.textContent = "🎤 マイクで言ってみる"; } };
-  rec.start();
+  rec.onerror = ev => {
+    got = true; clearTimeout(stopT);
+    const why = {"not-allowed": "マイクが許可されてへんみたい", "service-not-allowed": "マイクが許可されてへんみたい", "no-speech": "声が聞こえへんかった", "network": "ネットにつながってないみたい", "audio-capture": "マイクが見つからへんかった"}[ev.error];
+    if(ev.error === "not-allowed" || ev.error === "service-not-allowed")
+      toast("マイクを使うには許可が必要だワン：<br>・iPhone：設定 → Safari → マイク を「許可」。設定 → 一般 → キーボード → 「音声入力」もオンにする<br>・Android：Chromeのアドレスバー左の鍵マーク → 権限 → マイク を「許可」");
+    game.heard = "（" + (why || "うまく聞き取れなかった") + "）"; render();
+  };
+  rec.onend = () => {
+    clearTimeout(stopT);
+    if(!got && game && !game.answered){ game.heard = "（声が聞こえへんかった）"; render(); return; }
+    if(game && !game.answered && btn.isConnected){ btn.disabled = false; btn.textContent = "🎤 マイクで言ってみる"; }
+  };
+  try{ rec.start(); }catch(e){ clearTimeout(stopT); game.heard = "（マイクが使えなかった）"; render(); }
 }
 render();
 </script>
