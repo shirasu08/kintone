@@ -110,6 +110,12 @@ h2{font-family:var(--display);font-weight:700;font-size:16px;margin:0;text-wrap:
 .ex.off .ex-name,.ex.off .steps,.ex.off .ico{opacity:.4}
 .tick{width:30px;height:30px;border-radius:50%;border:2px solid var(--line);background:var(--surface);font-size:15px;font-weight:900;color:transparent;display:grid;place-items:center;padding:0}
 .tick[aria-pressed="true"]{background:var(--good);border-color:var(--good);color:var(--surface)}
+.upflag{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:3px 10px;font-size:12px;font-weight:700;color:var(--muted);white-space:nowrap;flex:none}
+.upflag[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.ex .upflag{grid-column:1/-1;justify-self:start}
+.sum .rt{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.prev.bump{color:var(--accent);font-weight:700}
+.uphint{font-size:12px;color:var(--muted)}
 .ex-name{font-weight:700;min-width:0}
 .ex-name .prev{display:block;font-weight:500;font-size:12px;color:var(--muted)}
 .steps{grid-column:1/-1;display:flex;gap:6px;flex-wrap:wrap}
@@ -395,7 +401,7 @@ function lastFor(name, before){
     if(before && ds[i] >= before) continue;
     const w = state.days[ds[i]].workout; if(!w) continue;
     const it = (w.items || []).find(x => x.name === name);
-    if(it) return { kg: it.kg, reps: it.reps, sets: it.sets, date: ds[i] };
+    if(it) return { kg: it.kg, reps: it.reps, sets: it.sets, up: !!it.up, date: ds[i] };
   }
   return null;
 }
@@ -408,17 +414,26 @@ function nextMenu(){
   }
   return ms[0];
 }
-function draftFromMenu(m){
-  return { date: state.date, menuId: m.id, menuName: m.name, items: m.items.map(it => {
-    const l = lastFor(it.name, state.date);
-    return { name: it.name, kg: l ? l.kg : it.kg, reps: l ? l.reps : it.reps, sets: l ? l.sets : it.sets, on: true, prev: l ? l.date : null };
-  }) };
+// "Raise it next time": heavier by a plate step; body-weight moves get 2 more reps instead.
+function bumped(l){
+  if(!l || !l.up) return null;
+  if(l.kg > 0) return { kg: l.kg + (l.kg >= 20 ? 2.5 : 1), reps: l.reps, note: `前回${kgTxt(l.kg)} → きょうは重量アップ！` };
+  return { kg: 0, reps: l.reps + 2, note: `前回${l.reps}回 → きょうは回数アップ！` };
 }
+function fromLast(name, base){
+  const l = lastFor(name, state.date), b = bumped(l);
+  return { name, kg: b ? b.kg : l ? l.kg : base.kg, reps: b ? b.reps : l ? l.reps : base.reps, sets: l ? l.sets : base.sets,
+    on: true, up: false, prev: l ? l.date : null, bump: b ? b.note : null };
+}
+function draftFromMenu(m){
+  return { date: state.date, menuId: m.id, menuName: m.name, items: m.items.map(it => fromLast(it.name, it)) };
+}
+const upList = m => m.items.map(it => it.name).filter(n => { const l = lastFor(n, addDays(today(), 1)); return l && l.up; });
 function ensureDraft(){
   if(draft && draft.date === state.date) return;
   const w = (state.days[state.date] || {}).workout;
   editing = false;
-  draft = w ? { date: state.date, menuId: w.menuId, menuName: w.menuName, items: w.items.map(it => ({...it, on: true, prev: null})) } : draftFromMenu(nextMenu());
+  draft = w ? { date: state.date, menuId: w.menuId, menuName: w.menuName, items: w.items.map(it => ({...it, on: true, up: !!it.up, prev: null, bump: null})) } : draftFromMenu(nextMenu());
 }
 
 /* ---------- exercise pictograms (matched by keywords in the exercise name) ---------- */
@@ -465,7 +480,9 @@ function coachMsg(c, g){
   if(c >= g) return "今週はもう目標クリアだワン。休むのも練習のうち、体を回復させてあげてね。";
   if(gap >= 5) return `前回から${gap}日あいてるワン。軽めでもいいから「${nextMenu().name}」を1回やってみようワン。`;
   if(gap === 1) return `きのうはおつかれさまだワン。同じところを続けてやるより、きょうは休むか「${nextMenu().name}」にするのがおすすめだワン。`;
-  return `今週はあと${g - c}回だワン。次は「${nextMenu().name}」の番だよ。前回と同じ重さが楽にできたら、＋を1回押してみようワン。`;
+  const nm = nextMenu(), ups = upList(nm);
+  if(ups.length) return `今週はあと${g - c}回だワン。次は「${nm.name}」の番で、${ups.join("・")}は重量アップの日だよ。もう重さを上げて入れてあるワン！`;
+  return `今週はあと${g - c}回だワン。次は「${nm.name}」の番だよ。余裕があった種目には「次は上げる」を付けておこうワン。`;
 }
 
 /* ---------- praise: what the trainer says about one recorded workout (no AI needed) ---------- */
@@ -568,8 +585,9 @@ function stepHTML(i, f, v, unit, step){
 function renderRows(){
   $("#woRows").innerHTML = draft.items.map((it, i) =>
     `<div class="ex${it.on ? "" : " off"}"><button class="tick" data-tick="${i}" aria-pressed="${it.on}" aria-label="${esc(it.name)}をやった">✓</button>` +
-    ico(it.name) + `<div class="ex-name">${esc(it.name)}<span class="prev">${it.prev ? `前回 ${md(it.prev)} と同じ` : (it.ai ? "いま読み取った内容" : "はじめて")}</span></div>` +
-    `<div class="steps">${stepHTML(i, "kg", it.kg, "kg", 2.5)}${stepHTML(i, "reps", it.reps, "回", 1)}${stepHTML(i, "sets", it.sets, "セット", 1)}</div></div>`).join("")
+    ico(it.name) + `<div class="ex-name">${esc(it.name)}${it.bump ? `<span class="prev bump">${esc(it.bump)}</span>` : `<span class="prev">${it.prev ? `前回 ${md(it.prev)} と同じ` : (it.ai ? "いま読み取った内容" : "はじめて")}</span>`}</div>` +
+    `<div class="steps">${stepHTML(i, "kg", it.kg, "kg", 2.5)}${stepHTML(i, "reps", it.reps, "回", 1)}${stepHTML(i, "sets", it.sets, "セット", 1)}</div>` +
+    `<button class="upflag" data-up="${i}" aria-pressed="${!!it.up}">${it.up ? "↑ 次は上げる" : "次は上げる？"}</button></div>`).join("")
     || `<div class="muted small" style="padding:10px 0">種目がありません。下から足してください。</div>`;
 }
 function renderToday(){
@@ -583,7 +601,9 @@ function renderToday(){
   $("#woDone").hidden = !w; $("#woView").hidden = !view; $("#woForm").hidden = view; $("#woCancel").hidden = !(w && editing);
   if(view){
     $("#woViewMenu").textContent = w.menuName || "";
-    $("#woViewList").innerHTML = w.items.map(it => `<div class="sum"><span class="nm">${ico(it.name, true)}${esc(it.name)}</span><span class="num">${itemTxt(it)}</span></div>`).join("");
+    $("#woViewList").innerHTML = w.items.map((it, i) => `<div class="sum"><span class="nm">${ico(it.name, true)}${esc(it.name)}</span><span class="rt"><span class="num">${itemTxt(it)}</span>` +
+      `<button class="upflag" data-vup="${i}" aria-pressed="${!!it.up}">${it.up ? "↑ 次は上げる" : "次は上げる？"}</button></span></div>`).join("") +
+      `<div class="uphint" style="margin-top:6px">余裕があった種目に「次は上げる」を付けると、次回は重さを上げた状態で出てくるワン。</div>`;
     const pz = praise(state.date);
     $("#woPraise").innerHTML = `<div class="av" aria-hidden="true">${MASCOT}</div><div><div class="hd">${esc(pz.head)}</div><ul>${pz.lines.map(l => `<li>${l}</li>`).join("")}</ul></div>`;
     const del = $("#woDel"); delete del.dataset.armed; del.textContent = "消す";
@@ -688,6 +708,8 @@ function setField(i, f, v){
 $("#woRows").addEventListener("click", e => {
   const t = e.target.closest("[data-tick]");
   if(t){ const it = draft.items[+t.dataset.tick]; it.on = !it.on; renderRows(); return; }
+  const u = e.target.closest("[data-up]");
+  if(u){ const it = draft.items[+u.dataset.up]; it.up = !it.up; renderRows(); return; }
   const s = e.target.closest("[data-step]"); if(!s) return;
   const i = +s.dataset.i, f = s.dataset.f;
   setField(i, f, draft.items[i][f] + parseFloat(s.dataset.step));
@@ -700,18 +722,26 @@ $("#woRows").addEventListener("change", e => {
 function addExercise(){
   const name = $("#addName").value.trim().slice(0, 30); if(!name) return;
   const l = lastFor(name, state.date);
-  draft.items.push({ name, kg: l ? l.kg : 0, reps: l ? l.reps : 10, sets: l ? l.sets : 3, on: true, prev: l ? l.date : null });
+  draft.items.push(fromLast(name, { kg: 0, reps: 10, sets: 3 }));
   $("#addName").value = ""; renderRows();
 }
 $("#addBtn").addEventListener("click", addExercise);
 $("#addName").addEventListener("keydown", e => { if(e.key === "Enter"){ e.preventDefault(); addExercise(); } });
 $("#woSave").addEventListener("click", () => {
-  const items = draft.items.filter(it => it.on).map(it => ({ name: it.name, kg: it.kg, reps: it.reps, sets: it.sets }));
+  const items = draft.items.filter(it => it.on).map(it => Object.assign({ name: it.name, kg: it.kg, reps: it.reps, sets: it.sets }, it.up ? { up: true } : {}));
   if(!items.length){ toast("やった種目に✓をつけてください"); return; }
   const day = state.days[state.date] || (state.days[state.date] = { date: state.date });
   day.workout = { menuId: draft.menuId || "", menuName: draft.menuName || "", items, at: Date.now() };
   saveDay(state.date); editing = false; draft = null; render(); toast("記録したワン！");
   const pc = $("#woCard"); if(pc.scrollIntoView) pc.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+});
+$("#woViewList").addEventListener("click", e => {
+  const b = e.target.closest("[data-vup]"); if(!b) return;
+  const w = (state.days[state.date] || {}).workout; if(!w) return;
+  const it = w.items[+b.dataset.vup]; if(!it) return;
+  if(it.up) delete it.up; else it.up = true;
+  saveDay(state.date); renderToday(); renderBoard();
+  if(it.up) toast(`${it.name}は次回アップだワン！`);
 });
 $("#woEdit").addEventListener("click", () => { draft = null; ensureDraft(); editing = true; renderToday(); });
 $("#woCancel").addEventListener("click", () => { draft = null; editing = false; renderToday(); });
