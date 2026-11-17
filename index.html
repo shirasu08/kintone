@@ -162,6 +162,10 @@ textarea.inp{min-height:110px;resize:vertical}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom, 0px));background:var(--board);color:var(--board-fg);
   padding:10px 18px;border-radius:999px;font-weight:700;font-size:14px;z-index:30;max-width:calc(100% - 32px);text-align:center;box-shadow:var(--shadow)}
 .hint{background:var(--sunken);border-radius:10px;padding:10px 12px;font-size:13px}
+#woRows{touch-action:pan-y}
+@keyframes inL{from{transform:translateX(40px);opacity:.2}to{transform:none;opacity:1}}
+@keyframes inR{from{transform:translateX(-40px);opacity:.2}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion: no-preference){ #woRows.inL{animation:inL .22s ease-out} #woRows.inR{animation:inR .22s ease-out} }
 @media (prefers-reduced-motion: no-preference){ .tick,.lamp,.chip{transition:background-color .15s,border-color .15s} }
 </style>
 
@@ -212,7 +216,7 @@ textarea.inp{min-height:110px;resize:vertical}
       </div>
       <div id="woForm">
         <div class="chips" id="menuChips"></div>
-        <div class="muted small" style="margin-top:8px">前回の重さと回数を入れてあります。同じなら下の赤いボタンを押すだけです。</div>
+        <div class="muted small" style="margin-top:8px">前回の重さと回数を入れてあるで。同じやったら下の赤いボタンを押すだけや。カードを左右にスライドするとメニューが変わるで。</div>
         <div id="woRows"></div>
         <div class="row" style="margin:4px 0 12px">
           <input class="inp" id="addName" placeholder="種目を足す（例：懸垂）" maxlength="30" style="flex:1 1 150px">
@@ -220,7 +224,7 @@ textarea.inp{min-height:110px;resize:vertical}
         </div>
         <button class="btn primary" id="woSave">この内容で記録する</button>
         <button class="btn ghost" id="aiOpen" style="width:100%;margin-top:8px" hidden>🎤 しゃべる・メモ・写真でまとめて入れる</button>
-        <button class="btn ghost" id="woCancel" style="width:100%;margin-top:8px" hidden>直すのをやめる</button>
+        <button class="btn ghost" id="woCancel" style="width:100%;margin-top:8px" hidden>直すのやめとく</button>
       </div>
     </section>
 
@@ -264,7 +268,7 @@ textarea.inp{min-height:110px;resize:vertical}
     </section>
     <section class="card">
       <h2>メニュー</h2>
-      <div class="muted small">ここで決めた種目が「きょう」の画面に並びます。重さは前回の記録が自動で入るので、ここの数字は最初の目安です。</div>
+      <div class="muted small">ここで決めた種目が「きょう」の画面に並ぶで。重さは前回の記録が自動で入るから、ここの数字は最初の目安や。</div>
       <div id="menuEd" style="display:flex;flex-direction:column;gap:12px"></div>
       <button class="btn" id="menuAdd">＋ メニューを足す</button>
       <button class="btn primary" id="setSave">保存する</button>
@@ -276,8 +280,8 @@ textarea.inp{min-height:110px;resize:vertical}
 <div class="overlay" id="overlay" hidden>
   <div class="sheet" role="dialog" aria-labelledby="aiTitle">
     <div class="row spread"><h2 id="aiTitle">まとめて入れる</h2><button class="btn ghost" id="aiClose">閉じる</button></div>
-    <div class="muted small">やった内容をふだんの言葉で。AIが種目・重さ・回数に整理します。<br>例：「ベンチ60キロ10回3セット、懸垂8回を3セット、あとスクワット70で5回5セット」</div>
-    <textarea class="inp" id="aiText" placeholder="ここに書く。スマホならキーボードのマイクでしゃべってもOK"></textarea>
+    <div class="muted small">やった内容をふだんの言葉で書いてな。AIが種目・重さ・回数に整理するで。<br>例：「ベンチ60キロ10回3セット、懸垂8回を3セット、あとスクワット70で5回5セット」</div>
+    <textarea class="inp" id="aiText" placeholder="ここに書いてな。スマホやったらキーボードのマイクでしゃべってもええで"></textarea>
     <div class="muted small" id="micLive" hidden></div>
     <div class="row">
       <button class="btn" id="micBtn" hidden>🎤 しゃべって入れる</button>
@@ -340,7 +344,7 @@ const pending = {}, chains = {};
 function lsSave(){ try{ localStorage.setItem(LS, JSON.stringify({profile: state.profile, days: state.days})); }catch(e){} }
 function lsLoad(){ try{ const o = JSON.parse(localStorage.getItem(LS) || "null"); if(o){ state.profile = o.profile || null; state.days = o.days || {}; } }catch(e){} }
 function dayEmpty(d){ return !d || (!d.workout && !d.weight && !d.fat); }
-function writeFail(e){ toast(e && e.code === "quota_exceeded" ? "保存できる量がいっぱいです" : "保存できませんでした。電波を確認してください"); }
+function writeFail(e){ toast(e && e.code === "quota_exceeded" ? "保存できる量がいっぱいや" : "保存でけへんかった。電波を確認してな"); }
 function saveDay(date){
   if(!state.cloud){ if(dayEmpty(state.days[date])) delete state.days[date]; lsSave(); return; }
   pending[date] = (pending[date] || 0) + 1;
@@ -371,7 +375,7 @@ async function initStore(){
     profileRef = db.doc("data/users/" + uid + "/profile");
     daysCol = profileRef.collection("days");
     const st = $("#status");
-    const timer = setTimeout(() => { st.textContent = "まだ記録を読み込めていません。電波を確認してください。"; st.hidden = false; }, 10000);
+    const timer = setTimeout(() => { st.textContent = "まだ記録を読み込めてへん。電波を確認してな。"; st.hidden = false; }, 10000);
     const settled = () => { clearTimeout(timer); st.hidden = true; };
     let gotP = false, gotD = false;
     const done = () => { if(gotP && gotD) state.ready = true; render(); };
@@ -387,8 +391,8 @@ async function initStore(){
     lsLoad(); state.ready = true; render();
   }
   $("#storeNote").textContent = state.cloud
-    ? "記録はあなたのアカウントにだけ保存され、ほかの人からは見えません。"
-    : "記録はこのスマホ（ブラウザ）の中にだけ保存されます。";
+    ? "記録はあんたのアカウントにだけ保存されるで。ほかの人からは見えへん。"
+    : "記録はこのスマホ（ブラウザ）の中にだけ保存されるで。";
 }
 
 /* ---------- derived ---------- */
@@ -474,15 +478,15 @@ const MASCOT = `<svg viewBox="0 0 96 96" role="img" aria-label="シュナマル�
 function coachMsg(c, g){
   if(!state.ready) return "いま記録を取りに行ってるワン…";
   const ds = sortedDates().filter(d => state.days[d].workout), t = today();
-  if(!ds.length) return "はじめまして、トレーナーのシュナマルだワン！下のメニューで赤いボタンを押すだけで記録できるよ。まずは1回、いっしょにやってみようワン。";
+  if(!ds.length) return "はじめまして、トレーナーのシュナマルやワン！下のメニューで赤いボタンを押すだけで記録できるで。まずは1回、いっしょにやってみよワン。";
   const last = ds[ds.length-1], gap = Math.round((parseD(t) - parseD(last)) / 864e5);
-  if(last === t) return c >= g ? "今週の目標クリアだワン！ナイスゲーム！しっかり食べてよく寝るまでがトレーニングだワン。" : "きょうもおつかれさまだワン！ごはんとたんぱく質をしっかりとって、よく寝てね。";
-  if(c >= g) return "今週はもう目標クリアだワン。休むのも練習のうち、体を回復させてあげてね。";
-  if(gap >= 5) return `前回から${gap}日あいてるワン。軽めでもいいから「${nextMenu().name}」を1回やってみようワン。`;
-  if(gap === 1) return `きのうはおつかれさまだワン。同じところを続けてやるより、きょうは休むか「${nextMenu().name}」にするのがおすすめだワン。`;
+  if(last === t) return c >= g ? "今週の目標クリアやワン！ナイスゲーム！しっかり食べてよう寝るまでがトレーニングやで。" : "きょうもおつかれさんやワン！ごはんとたんぱく質をしっかりとって、よう寝てな。";
+  if(c >= g) return "今週はもう目標クリアやワン。休むのも練習のうちや、体を回復させたってな。";
+  if(gap >= 5) return `前回から${gap}日あいてるワン。軽めでもええから「${nextMenu().name}」を1回やってみよか。`;
+  if(gap === 1) return `きのうはおつかれさんやワン。同じとこ続けてやるより、きょうは休むか「${nextMenu().name}」にするのがおすすめやで。`;
   const nm = nextMenu(), ups = upList(nm);
-  if(ups.length) return `今週はあと${g - c}回だワン。次は「${nm.name}」の番で、${ups.join("・")}は重量アップの日だよ。もう重さを上げて入れてあるワン！`;
-  return `今週はあと${g - c}回だワン。次は「${nm.name}」の番だよ。余裕があった種目には「次は上げる」を付けておこうワン。`;
+  if(ups.length) return `今週はあと${g - c}回やワン。次は「${nm.name}」の番で、${ups.join("・")}は重量アップの日やで。もう重さ上げて入れてあるワン！`;
+  return `今週はあと${g - c}回やワン。次は「${nm.name}」の番やで。余裕があった種目には「次は上げる」を付けとこな。`;
 }
 
 /* ---------- praise: what the trainer says about one recorded workout (no AI needed) ---------- */
@@ -494,11 +498,11 @@ function bestBefore(name, date){
   return b;
 }
 const PART = {
-  lower: ["下半身", "下半身は打つ・投げる・走るの土台だワン。打球の飛距離も一歩目のスタートもここから変わるよ。"],
-  push: ["胸・肩", "胸と肩は送球の強さと、バットを押し込む力に効くワン。肩まわりのケアも忘れずにね。"],
-  pull: ["背中", "背中はスイングの引き手と、投げたあとのブレーキ役だワン。ケガしにくい体になるよ。"],
-  core: ["体幹", "体幹のひねりはスイングスピードに直結だワン。下半身の力をバットに伝える通り道だよ。"],
-  arm: ["腕", "腕と握る力はバットコントロールに効くワン。最後のひと押しが強くなるよ。"] };
+  lower: ["下半身", "下半身は打つ・投げる・走るの土台やワン。打球の飛距離も一歩目のスタートもここから変わるで。"],
+  push: ["胸・肩", "胸と肩は送球の強さと、バットを押し込む力に効くワン。肩まわりのケアも忘れんといてな。"],
+  pull: ["背中", "背中はスイングの引き手と、投げたあとのブレーキ役やワン。ケガしにくい体になるで。"],
+  core: ["体幹", "体幹のひねりはスイングスピードに直結やワン。下半身の力をバットに伝える通り道やで。"],
+  arm: ["腕", "腕と握る力はバットコントロールに効くワン。最後のひと押しが強なるで。"] };
 const PART_OF = { squat:"lower", hinge:"lower", lunge:"lower", bench:"push", pushup:"push", press:"push", pull:"pull", row:"pull", curl:"arm", core:"core", twist:"core" };
 function praise(date){
   const w = (state.days[date] || {}).workout; if(!w) return null;
@@ -511,10 +515,10 @@ function praise(date){
     else if(it.kg === l.kg && it.reps * it.sets > l.reps * l.sets) ups.push(`${esc(it.name)} ${l.reps}回×${l.sets} → <b>${it.reps}回×${it.sets}</b>`);
   });
   const prior = sortedDates().filter(d => d < date && state.days[d].workout);
-  const head = !prior.length ? "記念すべき初記録だワン！プレイボール！"
-    : prs.length ? pick(["自己ベスト更新だワン！特大ホームランや！", "自己ベストが出たワン！スタンドまで飛んでったよ！"])
-    : ups.length ? pick(["前回より伸びてるワン！ナイスバッティング！", "ちゃんと成長してるワン！クリーンヒット！"])
-    : pick(["きょうもしっかり振り切ったワン！ナイスゲーム！", "同じ重さをきっちりこなすのも立派な練習だワン！", "積み重ねがいちばん強いワン。ナイスプレー！"]);
+  const head = !prior.length ? "記念すべき初記録やワン！プレイボール！"
+    : prs.length ? pick(["自己ベスト更新やワン！特大ホームランや！", "自己ベストが出たワン！スタンドまで飛んでったで！"])
+    : ups.length ? pick(["前回より伸びてるやん！ナイスバッティングやワン！", "ちゃんと成長してるワン！クリーンヒットや！"])
+    : pick(["きょうもしっかり振り切ったな！ナイスゲームやワン！", "同じ重さをきっちりこなすのも立派な練習やワン！", "積み重ねがいちばん強いんやワン。ナイスプレー！"]);
   const lines = [];
   prs.forEach(x => lines.push(`<span class="pr">自己ベスト</span> ${x}`));
   ups.forEach(x => lines.push(`前回より↑ ${x}`));
@@ -531,9 +535,9 @@ function praise(date){
   const parts = Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a]);
   if(parts.length) lines.push(PART[parts[0]][1]);
   const ws = weekStart(date), n = Object.keys(state.days).filter(d => d <= date && weekStart(d) === ws && state.days[d].workout).length, g = goal();
-  if(n === g) lines.push(`これで今週${g}回目、<b>目標クリア</b>だワン！`);
-  else if(n < g) lines.push(`今週${n}回目。目標まであと${g - n}回だワン。`);
-  else lines.push(`今週${n}回目！目標以上にがんばってるワン。休む日もちゃんとつくってね。`);
+  if(n === g) lines.push(`これで今週${g}回目、<b>目標クリア</b>やワン！`);
+  else if(n < g) lines.push(`今週${n}回目。目標まであと${g - n}回やワン。`);
+  else lines.push(`今週${n}回目！目標以上にがんばってるやん。休む日もちゃんと作ってな。`);
   return { head, lines };
 }
 
@@ -566,13 +570,13 @@ function renderBoard(){
   $("#lamps").innerHTML = `今週 ${Array.from({length: Math.max(g, c)}, (_, i) => `<span class="lamp${i < c ? " on" : ""}"></span>`).join("")} <span class="num">${c}/${g}</span>`;
   let streak = 0; for(let i = (c >= g ? 8 : 7); i >= 0 && cnt[i] >= g; i--) streak++;
   const left = Math.max(0, g - c);
-  $("#boardFoot").innerHTML = !state.ready ? "記録を読み込んでいます…"
-    : (c >= g ? "今週は目標クリア。" : `今週はあと <b>${left}回</b> で目標クリア。`) + (streak >= 2 ? `　目標クリア <b>${streak}週連続</b> 中。` : "") + "　日付を押すとその週の内容が出ます。";
+  $("#boardFoot").innerHTML = !state.ready ? "記録を読み込んでるで…"
+    : (c >= g ? "今週は目標クリアや。" : `今週はあと <b>${left}回</b> で目標クリアや。`) + (streak >= 2 ? `　目標クリア <b>${streak}週連続</b> 中。` : "") + "　日付を押すとその週の内容が出るで。";
   const wd = Object.keys(state.days).filter(d => state.days[d].workout && weekStart(d) === selWeek).sort();
   $("#weekDetail").innerHTML = `<div class="wh">${md(selWeek)}〜${md(addDays(selWeek, 6))} の筋トレ</div>` + (wd.length ? wd.map(d => {
     const w = state.days[d].workout, dt = parseD(d);
     return `<div class="ws"><b>${md(d)}（${WD[dt.getDay()]}）${esc(w.menuName || "")}</b><span>${w.items.map(it => `${esc(it.name)} ${kgTxt(it.kg)}×${it.reps}×${it.sets}`).join("　")}</span></div>`;
-  }).join("") : `<div class="ws"><span>この週の記録はありません。</span></div>`);
+  }).join("") : `<div class="ws"><span>この週の記録はないで。</span></div>`);
   $("#coachMsg").textContent = coachMsg(c, g);
 }
 
@@ -588,7 +592,7 @@ function renderRows(){
     ico(it.name) + `<div class="ex-name">${esc(it.name)}${it.bump ? `<span class="prev bump">${esc(it.bump)}</span>` : `<span class="prev">${it.prev ? `前回 ${md(it.prev)} と同じ` : (it.ai ? "いま読み取った内容" : "はじめて")}</span>`}</div>` +
     `<div class="steps">${stepHTML(i, "kg", it.kg, "kg", 2.5)}${stepHTML(i, "reps", it.reps, "回", 1)}${stepHTML(i, "sets", it.sets, "セット", 1)}</div>` +
     `<button class="upflag" data-up="${i}" aria-pressed="${!!it.up}">${it.up ? "↑ 次は上げる" : "次は上げる？"}</button></div>`).join("")
-    || `<div class="muted small" style="padding:10px 0">種目がありません。下から足してください。</div>`;
+    || `<div class="muted small" style="padding:10px 0">種目があらへん。下から足してな。</div>`;
 }
 function renderToday(){
   const d = parseD(state.date), isToday = state.date === today();
@@ -603,7 +607,7 @@ function renderToday(){
     $("#woViewMenu").textContent = w.menuName || "";
     $("#woViewList").innerHTML = w.items.map((it, i) => `<div class="sum"><span class="nm">${ico(it.name, true)}${esc(it.name)}</span><span class="rt"><span class="num">${itemTxt(it)}</span>` +
       `<button class="upflag" data-vup="${i}" aria-pressed="${!!it.up}">${it.up ? "↑ 次は上げる" : "次は上げる？"}</button></span></div>`).join("") +
-      `<div class="uphint" style="margin-top:6px">余裕があった種目に「次は上げる」を付けると、次回は重さを上げた状態で出てくるワン。</div>`;
+      `<div class="uphint" style="margin-top:6px">余裕があった種目に「次は上げる」を付けとくと、次は重さ上げた状態で出てくるワン。</div>`;
     const pz = praise(state.date);
     $("#woPraise").innerHTML = `<div class="av" aria-hidden="true">${MASCOT}</div><div><div class="hd">${esc(pz.head)}</div><ul>${pz.lines.map(l => `<li>${l}</li>`).join("")}</ul></div>`;
     const del = $("#woDel"); delete del.dataset.armed; del.textContent = "消す";
@@ -619,7 +623,7 @@ function renderToday(){
 function weightChart(){
   const pts = sortedDates().filter(d => state.days[d].weight).slice(-90).map(d => ({d, v: state.days[d].weight}));
   const box = $("#wChart");
-  if(pts.length < 2){ box.innerHTML = `<div class="muted small">体重を2日ぶん以上記録すると、ここに線グラフが出ます。${pts.length ? `（いま ${pts[0].v.toFixed(1)}kg）` : ""}</div>`; $("#wRange").textContent = ""; return; }
+  if(pts.length < 2){ box.innerHTML = `<div class="muted small">体重を2日ぶん以上記録したら、ここに線グラフが出るで。${pts.length ? `（いま ${pts[0].v.toFixed(1)}kg）` : ""}</div>`; $("#wRange").textContent = ""; return; }
   const tgt = state.profile && state.profile.targetW;
   const vals = pts.map(p => p.v).concat(tgt ? [tgt] : []);
   let lo = Math.floor(Math.min(...vals) - 0.5), hi = Math.ceil(Math.max(...vals) + 0.5);
@@ -652,12 +656,12 @@ function renderLog(){
     const body = e.first.kg || e.last.kg ? `${kgTxt(e.first.kg)} → ${kgTxt(e.last.kg)}` : `${e.first.reps}回 → ${e.last.reps}回`;
     const upv = e.first.kg || e.last.kg ? up : e.last.reps - e.first.reps;
     return `<div class="grow"><span>${esc(n)} <span class="muted small">${e.n}回</span></span><span class="num">${body}${upv > 0 ? ` <span class="up">+${Math.round(upv*100)/100}</span>` : ""}</span></div>`;
-  }).join("") : `<div class="muted small">筋トレを記録すると、種目ごとにどれだけ重くなったかが並びます。</div>`;
+  }).join("") : `<div class="muted small">筋トレを記録したら、種目ごとにどんだけ重なったかが並ぶで。</div>`;
   $("#history").innerHTML = ds.length ? ds.slice().reverse().slice(0, 60).map(d => {
     const w = state.days[d].workout, dt = parseD(d);
     return `<button class="hist" data-date="${d}"><span class="hd"><span>${dt.getMonth()+1}月${dt.getDate()}日（${WD[dt.getDay()]}）</span><span class="muted small">${esc(w.menuName || "")}</span></span>` +
       `<span class="muted small">${w.items.map(it => `${esc(it.name)} ${kgTxt(it.kg)}×${it.reps}×${it.sets}`).join("、")}</span></button>`;
-  }).join("") : `<div class="muted small">まだ記録がありません。「きょう」の画面の赤いボタンで最初の1回を記録しましょう。</div>`;
+  }).join("") : `<div class="muted small">まだ記録があらへん。「きょう」の画面の赤いボタンで最初の1回を記録しよか。</div>`;
 }
 
 /* ---------- render: settings ---------- */
@@ -695,6 +699,33 @@ document.querySelectorAll(".tabs button").forEach(b => b.addEventListener("click
 function goDate(d){ state.date = d; draft = null; $("#bodyMsg").hidden = true; render(); }
 $("#prev").addEventListener("click", () => goDate(addDays(state.date, -1)));
 $("#next").addEventListener("click", () => { if(state.date < today()) goDate(addDays(state.date, 1)); });
+/* swipe the menu card left / right to switch to the next / previous menu */
+function switchMenu(dir){
+  const ms = menus(); let i = ms.findIndex(m => m.id === draft.menuId);
+  i = i < 0 ? 0 : (i + dir + ms.length) % ms.length;
+  draft = draftFromMenu(ms[i]); renderToday();
+  const r = $("#woRows"); r.classList.remove("inL", "inR"); void r.offsetWidth; r.classList.add(dir > 0 ? "inL" : "inR");
+}
+(() => {
+  const area = $("#woForm"), rows = $("#woRows"); let x0 = null, y0 = 0, horiz = false;
+  area.addEventListener("touchstart", e => {
+    if(e.touches.length !== 1 || e.target.closest("textarea, select, #addName")){ x0 = null; return; }
+    x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; horiz = false;
+  }, { passive: true });
+  area.addEventListener("touchmove", e => {
+    if(x0 == null) return;
+    const dx = e.touches[0].clientX - x0, dy = e.touches[0].clientY - y0;
+    if(!horiz && Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy) * 1.5) horiz = true;
+    if(horiz) rows.style.transform = `translateX(${Math.max(-80, Math.min(80, dx * 0.5))}px)`;
+  }, { passive: true });
+  const end = e => {
+    if(x0 == null) return;
+    const t = e.changedTouches && e.changedTouches[0], dx = t ? t.clientX - x0 : 0, dy = t ? t.clientY - y0 : 0;
+    x0 = null; rows.style.transform = "";
+    if(horiz && Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) switchMenu(dx < 0 ? 1 : -1);
+  };
+  area.addEventListener("touchend", end); area.addEventListener("touchcancel", end);
+})();
 $("#menuChips").addEventListener("click", e => {
   const b = e.target.closest("[data-menu]"); if(!b) return;
   const m = menus().find(x => x.id === b.dataset.menu); if(!m) return;
@@ -729,7 +760,7 @@ $("#addBtn").addEventListener("click", addExercise);
 $("#addName").addEventListener("keydown", e => { if(e.key === "Enter"){ e.preventDefault(); addExercise(); } });
 $("#woSave").addEventListener("click", () => {
   const items = draft.items.filter(it => it.on).map(it => Object.assign({ name: it.name, kg: it.kg, reps: it.reps, sets: it.sets }, it.up ? { up: true } : {}));
-  if(!items.length){ toast("やった種目に✓をつけてください"); return; }
+  if(!items.length){ toast("やった種目に✓をつけてな"); return; }
   const day = state.days[state.date] || (state.days[state.date] = { date: state.date });
   day.workout = { menuId: draft.menuId || "", menuName: draft.menuName || "", items, at: Date.now() };
   saveDay(state.date); editing = false; draft = null; render(); toast("記録したワン！");
@@ -741,15 +772,15 @@ $("#woViewList").addEventListener("click", e => {
   const it = w.items[+b.dataset.vup]; if(!it) return;
   if(it.up) delete it.up; else it.up = true;
   saveDay(state.date); renderToday(); renderBoard();
-  if(it.up) toast(`${it.name}は次回アップだワン！`);
+  if(it.up) toast(`${it.name}は次回アップやワン！`);
 });
 $("#woEdit").addEventListener("click", () => { draft = null; ensureDraft(); editing = true; renderToday(); });
 $("#woCancel").addEventListener("click", () => { draft = null; editing = false; renderToday(); });
 $("#woDel").addEventListener("click", e => {
   const b = e.currentTarget;
-  if(!b.dataset.armed){ b.dataset.armed = "1"; b.textContent = "もう一度押すと消えます"; return; }
+  if(!b.dataset.armed){ b.dataset.armed = "1"; b.textContent = "もう一回押したら消えるで"; return; }
   const day = state.days[state.date]; if(day){ delete day.workout; saveDay(state.date); }
-  draft = null; render(); toast("消しました");
+  draft = null; render(); toast("消したで");
 });
 
 /* ---------- body weight ---------- */
@@ -764,9 +795,9 @@ document.querySelectorAll("[data-body]").forEach(el => el.addEventListener("chan
   const ok = setBody(state.date, el.dataset.body, parseFloat(e.target.value)); if(!ok) e.target.value = "";
   saveDay(state.date); render(); if(ok) toast(BODY[el.dataset.body][2] + "を記録したワン！");
 }));
-const ERR = { not_granted: "AIを使う許可がないため読み取れません。手で入力してください。", rate_limited: "AIの利用回数が上限に達しました。少し待つか、手で入力してください。",
-  image_rejected: "この画像は読み込めませんでした。別の画像を選んでください。", images_unavailable: "この画面では画像を送れません。手で入力してください。",
-  refused: "この内容は読み取れませんでした。", invalid_json: "うまく読み取れませんでした。もう一度お試しください。" };
+const ERR = { not_granted: "AIを使う許可があらへんから読み取られへん。手で入れてな。", rate_limited: "AIを使える回数がいっぱいや。ちょっと待つか、手で入れてな。",
+  image_rejected: "この画像は読み込まれへんかった。別の画像を選んでな。", images_unavailable: "この画面では画像を送られへん。手で入れてな。",
+  refused: "この内容は読み取られへんかった。", invalid_json: "うまく読み取られへんかった。もう一回やってみてな。" };
 $("#scanIn").addEventListener("change", async e => {
   const file = e.target.files[0]; e.target.value = ""; if(!file || !sampleFn) return;
   const msg = $("#bodyMsg"), btn = $("#scanBtn"), date = state.date;
@@ -778,22 +809,22 @@ weight は体重(kg)、fat は体脂肪率(%)。date は画面に測定日が表
 画面に無い値や読み取れない値は推測せず null。体重計の測定値が見当たらなければ found を false。`;
   try{
     const r = await sampleFn.json(prompt, { images: [file], cache: false });
-    if(!r || r.found === false){ msg.textContent = "体重の数字を見つけられませんでした。数字がはっきり写った画面でもう一度試すか、手で入力してください。"; }
+    if(!r || r.found === false){ msg.textContent = "体重の数字が見つからへんかった。数字がはっきり写った画面でもう一回試すか、手で入れてな。"; }
     else {
       // If the screenshot shows its own measuring date (not in the future), file it under that date.
       const sd = typeof r.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(r.date) && r.date <= today() && r.date >= addDays(today(), -365) ? r.date : date;
       const got = Object.keys(BODY).filter(k => r[k] != null && setBody(sd, k, parseFloat(r[k])));
-      if(!got.length){ msg.textContent = "数字を読み取れませんでした。手で入力してください。"; }
+      if(!got.length){ msg.textContent = "数字を読み取られへんかった。手で入れてな。"; }
       else {
         saveDay(sd);
         const day = state.days[sd];
-        msg.textContent = `読み取りました：${got.map(k => `${BODY[k][2]} ${day[k].toFixed(1)}${BODY[k][3]}`).join("、")}` +
-          (sd !== date ? `。スクショの測定日が${md(sd)}だったので、その日の記録に入れました。` : "。違っていたら上の欄で直せます。");
+        msg.textContent = `読み取ったで：${got.map(k => `${BODY[k][2]} ${day[k].toFixed(1)}${BODY[k][3]}`).join("、")}` +
+          (sd !== date ? `。スクショの測定日が${md(sd)}やったから、その日の記録に入れといたで。` : "。違ってたら上の欄で直せるで。");
         toast("体重を記録したワン！");
       }
       render();
     }
-  }catch(err){ msg.textContent = ERR[err && err.code] || "読み取れませんでした。電波を確認して、もう一度お試しください。"; }
+  }catch(err){ msg.textContent = ERR[err && err.code] || "読み取られへんかった。電波を確認して、もう一回やってみてな。"; }
   btn.style.opacity = ""; btn.style.pointerEvents = "";
 });
 
@@ -816,8 +847,8 @@ function wireDictation(){
   btn.addEventListener("click", () => {
     if(dict.active()){ dict.stop().catch(() => {}); return; }
     dict.start({ language: "ja" }).catch(err => {
-      if(err && err.code === "not_granted"){ btn.hidden = true; toast("マイクが使えないので、文字で入れてください"); }
-      else if(err && err.code !== "dismissed" && err.code !== "stopped") toast("マイクを始められませんでした");
+      if(err && err.code === "not_granted"){ btn.hidden = true; toast("マイクが使われへんから、文字で入れてな"); }
+      else if(err && err.code !== "dismissed" && err.code !== "stopped") toast("マイクを始められへんかった");
     });
   });
 }
@@ -826,7 +857,7 @@ $("#aiRun").addEventListener("click", async () => {
   const err = $("#aiErr"); err.hidden = true;
   if(dict && dict.active()){ try{ await dict.stop(); }catch(e){} }
   const memo = $("#aiText").value.trim();
-  if(!memo && !aiFile){ err.textContent = "やった内容を書くか、写真を選んでください。"; err.hidden = false; return; }
+  if(!memo && !aiFile){ err.textContent = "やった内容を書くか、写真を選んでな。"; err.hidden = false; return; }
   const known = [...new Set(menus().flatMap(m => m.items.map(i => i.name)).concat(sortedDates().flatMap(d => ((state.days[d].workout || {}).items || []).map(i => i.name))))];
   const prompt = `筋トレの記録を整理します。${aiFile ? "添付の画像は、筋トレのメモ・マシンの画面・トレーニングアプリやスマートウォッチの画面のいずれかです。" : ""}
 ${memo ? `本人のメモ（話し言葉・音声入力なので誤変換あり）: 「${memo}」\n` : ""}ここから、やった種目ごとに 重さ(kg)・回数・セット数 を取り出してください。
@@ -842,17 +873,17 @@ ${memo ? `本人のメモ（話し言葉・音声入力なので誤変換あり�
     const r = await sampleFn.json(prompt, opts);
     const items = (r && Array.isArray(r.items) ? r.items : []).filter(x => x && x.name).slice(0, 20)
       .map(x => ({ name: String(x.name).slice(0, 30), kg: nKg(x.kg), reps: nInt(x.reps, 200), sets: nInt(x.sets, 20), on: true, prev: null, ai: true }));
-    if(!items.length){ err.textContent = "筋トレの内容を読み取れませんでした。「ベンチ60キロ10回3セット」のように書いてみてください。"; err.hidden = false; }
+    if(!items.length){ err.textContent = "筋トレの内容を読み取られへんかった。「ベンチ60キロ10回3セット」みたいに書いてみてな。"; err.hidden = false; }
     else {
       ensureDraft();
       const m = menus().map(mm => ({ mm, hit: mm.items.filter(i => items.some(x => x.name === i.name)).length })).sort((a, b) => b.hit - a.hit)[0];
       draft = { date: state.date, menuId: m && m.hit ? m.mm.id : "", menuName: m && m.hit ? m.mm.name : "フリー", items };
       if((state.days[state.date] || {}).workout) editing = true;
       $("#aiText").value = ""; aiFile = null; $("#aiPhoto").value = ""; $("#aiPhotoName").hidden = true;
-      closeAI(); renderToday(); toast(`${items.length}種目を読み取りました。確認して赤いボタンを押してください`);
+      closeAI(); renderToday(); toast(`${items.length}種目を読み取ったで。確かめて赤いボタンを押してな`);
     }
   }catch(e){
-    err.textContent = ERR[e && e.code] || "整理できませんでした。電波を確認して、もう一度お試しください。"; err.hidden = false;
+    err.textContent = ERR[e && e.code] || "整理でけへんかった。電波を確認して、もう一回やってみてな。"; err.hidden = false;
   }
   aiBusy = false; btn.disabled = false; btn.textContent = "整理して入れる";
 });
@@ -870,7 +901,7 @@ $("#menuEd").addEventListener("click", e => {
   if(a){ edMenus[+a.dataset.iadd].items.push({ name: "", kg: 0, reps: 10, sets: 3 }); renderMenuEd(); const mi = +a.dataset.iadd; const f = $(`#mi-${mi}-${edMenus[mi].items.length-1}-name`); if(f) f.focus(); }
   else if(d){ const [mi, ii] = d.dataset.idel.split(":").map(Number); edMenus[mi].items.splice(ii, 1); renderMenuEd(); }
   else if(md_){
-    if(!md_.dataset.armed){ md_.dataset.armed = "1"; md_.textContent = "もう一度押すと消えます"; return; }
+    if(!md_.dataset.armed){ md_.dataset.armed = "1"; md_.textContent = "もう一回押したら消えるで"; return; }
     edMenus.splice(+md_.dataset.mdel, 1); renderMenuEd();
   }
 });
@@ -878,7 +909,7 @@ $("#menuAdd").addEventListener("click", () => { if(!edMenus) edMenus = clone(men
 $("#setSave").addEventListener("click", () => {
   const ms = (edMenus || clone(menus())).map(m => ({ id: m.id || uid6(), name: String(m.name || "").trim().slice(0, 24) || "メニュー",
     items: m.items.map(it => ({ name: String(it.name || "").trim().slice(0, 30), kg: nKg(it.kg), reps: nInt(it.reps, 200), sets: nInt(it.sets, 20) })).filter(it => it.name) })).filter(m => m.items.length);
-  if(!ms.length){ toast("種目が1つ以上あるメニューを残してください"); return; }
+  if(!ms.length){ toast("種目が1つ以上あるメニューは残しといてな"); return; }
   const tw = parseFloat($("#targetW").value);
   state.profile = { goal: nInt($("#goalSel").value, 7), targetW: Number.isFinite(tw) && tw >= 25 && tw <= 200 ? Math.round(tw*10)/10 : null, menus: ms };
   saveProfileDoc(); edMenus = null; draft = null; renderMenuEd(); render(); toast("保存したワン！");
