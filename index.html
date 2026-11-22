@@ -279,7 +279,7 @@ textarea.inp{min-height:110px;resize:vertical}
     </section>
     <section class="card">
       <h2>メニュー</h2>
-      <div class="muted small">ここで決めた種目が「きょう」の画面に並ぶで。重さは前回の記録が自動で入るから、ここの数字は最初の目安や。</div>
+      <div class="muted small">ここで決めた種目が「きょう」の画面に並ぶで。ここより重い重さや多い回数で記録したら、ここの数字も自動で更新されるで。メニューにない種目をやったら、それも自動で足しとくワン。</div>
       <div id="menuEd" style="display:flex;flex-direction:column;gap:12px"></div>
       <button class="btn" id="menuAdd">＋ メニューを足す</button>
       <button class="btn primary" id="setSave">保存する</button>
@@ -832,12 +832,31 @@ function addExercise(){
 }
 $("#addBtn").addEventListener("click", addExercise);
 $("#addName").addEventListener("keydown", e => { if(e.key === "Enter"){ e.preventDefault(); addExercise(); } });
+/* After a workout is saved, raise the menu's numbers where the workout went beyond them,
+   and add exercises that were done but are not in the menu yet. Never lowers anything. */
+function syncMenu(menuId, items){
+  const ms = clone(menus()), m = ms.find(x => x.id === menuId); if(!m) return [];
+  const changes = [];
+  items.forEach(it => {
+    const mi = m.items.find(x => x.name === it.name);
+    if(!mi){ m.items.push({ name: it.name, kg: it.kg, reps: it.reps, sets: it.sets }); changes.push(`${it.name}を追加`); return; }
+    if(it.kg > mi.kg || (it.kg === mi.kg && it.reps * it.sets > mi.reps * mi.sets)){
+      mi.kg = it.kg; mi.reps = it.reps; mi.sets = it.sets; changes.push(`${it.name} ${kgTxt(it.kg)}×${it.reps}×${it.sets}`); }
+  });
+  if(changes.length){
+    state.profile = Object.assign({ goal: goal(), targetW: null }, state.profile || {}, { menus: ms });
+    saveProfileDoc(); edMenus = null;
+  }
+  return changes;
+}
 $("#woSave").addEventListener("click", () => {
   const items = draft.items.filter(it => it.on).map(it => Object.assign({ name: it.name, kg: it.kg, reps: it.reps, sets: it.sets }, it.up ? { up: true } : {}));
   if(!items.length){ toast("やった種目に✓をつけてな"); return; }
   const day = state.days[state.date] || (state.days[state.date] = { date: state.date });
   day.workout = { menuId: draft.menuId || "", menuName: draft.menuName || "", items, at: Date.now() };
-  saveDay(state.date); editing = false; draft = null; render(); toast("記録したワン！");
+  const changed = syncMenu(day.workout.menuId, items);
+  saveDay(state.date); editing = false; draft = null; render();
+  toast(changed.length ? `記録したワン！メニューも更新したで（${changed.slice(0, 2).join("、")}${changed.length > 2 ? ` ほか${changed.length - 2}つ` : ""}）` : "記録したワン！");
   askCoach(state.date);
   const pc = $("#woCard"); if(pc.scrollIntoView) pc.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
 });
