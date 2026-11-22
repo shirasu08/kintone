@@ -78,13 +78,24 @@ h2{font-family:var(--display);font-weight:700;font-size:16px;margin:0;text-wrap:
 .wk-detail .wh{font-weight:700;color:var(--board-dim);letter-spacing:.04em}
 .wk-detail .ws b{display:block}
 .wk-detail .ws span{color:var(--board-dim)}
-.praise{display:grid;grid-template-columns:52px 1fr;gap:12px;align-items:start;background:var(--accent-soft);border-radius:12px;padding:12px;margin-top:12px}
+.praise{background:var(--accent-soft);border-radius:12px;padding:14px;margin-top:12px;display:flex;flex-direction:column;gap:12px}
+.praise .top{display:grid;grid-template-columns:52px 1fr;gap:12px;align-items:center}
 .praise .av svg{display:block;width:52px;height:52px}
-.praise .hd{font-family:var(--display);font-weight:900;font-size:16px;line-height:1.4}
-.praise ul{margin:6px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:4px;font-size:14px}
+.praise .hd{font-family:var(--display);font-weight:900;font-size:17px;line-height:1.4;text-wrap:balance}
+.praise .sec{display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--line);padding-top:10px}
+.praise h3{margin:0;font-size:13px;font-weight:900;letter-spacing:.06em;color:var(--accent)}
+.praise ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:5px;font-size:14px}
 .praise li{padding-left:16px;position:relative}
 .praise li::before{content:"";position:absolute;left:2px;top:.6em;width:7px;height:7px;border-radius:50%;background:var(--accent)}
 .praise .pr{font-weight:700;color:var(--accent)}
+.praise .note{font-size:14px}
+.mbars{display:flex;flex-direction:column;gap:5px}
+.mbar{display:grid;grid-template-columns:5.5em minmax(0,1fr) auto;gap:8px;align-items:center;font-size:13px;font-weight:700}
+.mbar .tr{display:block;height:10px;background:var(--surface);border-radius:999px;overflow:hidden}
+.mbar .fl{display:block;height:100%;background:var(--accent);border-radius:999px}
+.mbar .n{text-align:right;white-space:nowrap;font-family:var(--digits);font-size:15px;color:var(--muted)}
+.praise .ai{font-size:14px;display:flex;flex-direction:column;gap:6px}
+.praise .ai b{color:var(--accent)}
 
 .coach{display:grid;grid-template-columns:64px 1fr;gap:14px;align-items:center}
 .coach .av{width:64px;height:64px}
@@ -504,7 +515,10 @@ const PART = {
   core: ["体幹", "体幹のひねりはスイングスピードに直結やワン。下半身の力をバットに伝える通り道やで。"],
   arm: ["腕", "腕と握る力はバットコントロールに効くワン。最後のひと押しが強なるで。"] };
 const PART_OF = { squat:"lower", hinge:"lower", lunge:"lower", bench:"push", pushup:"push", press:"push", pull:"pull", row:"pull", curl:"arm", core:"core", twist:"core" };
-function praise(date){
+// Which muscles each kind of exercise mainly works (plain words, not anatomy terms).
+const MUSCLE = { squat:["太もも前","お尻"], hinge:["もも裏","お尻","腰まわり"], lunge:["太もも前","お尻"], bench:["胸","肩の前","二の腕"],
+  pushup:["胸","二の腕"], press:["肩"], pull:["背中","力こぶ"], row:["背中","肩の後ろ"], curl:["力こぶ"], core:["お腹"], twist:["脇腹"] };
+function analyze(date){
   const w = (state.days[date] || {}).workout; if(!w) return null;
   const seed = [...date].reduce((a, c) => a + c.charCodeAt(0), 0) + w.items.length;
   const pick = a => a[seed % a.length];
@@ -519,26 +533,87 @@ function praise(date){
     : prs.length ? pick(["自己ベスト更新やワン！特大ホームランや！", "自己ベストが出たワン！スタンドまで飛んでったで！"])
     : ups.length ? pick(["前回より伸びてるやん！ナイスバッティングやワン！", "ちゃんと成長してるワン！クリーンヒットや！"])
     : pick(["きょうもしっかり振り切ったな！ナイスゲームやワン！", "同じ重さをきっちりこなすのも立派な練習やワン！", "積み重ねがいちばん強いんやワン。ナイスプレー！"]);
-  const lines = [];
-  prs.forEach(x => lines.push(`<span class="pr">自己ベスト</span> ${x}`));
-  ups.forEach(x => lines.push(`前回より↑ ${x}`));
+  // ---- praise points ----
+  const good = [];
+  prs.forEach(x => good.push(`<span class="pr">自己ベスト</span> ${x}`));
+  ups.forEach(x => good.push(`前回より↑ ${x}`));
   const sets = w.items.reduce((a, it) => a + it.sets, 0), v = vol(w.items);
   const same = prior.filter(d => state.days[d].workout.menuId && state.days[d].workout.menuId === w.menuId).pop();
-  let vt = `${w.items.length}種目・${sets}セット`;
-  if(v > 0) vt += `、持ち上げた重さの合計は <b>${Math.round(v).toLocaleString()}kg</b>`;
+  let vt = `${w.items.length}種目・${sets}セットやりきった`;
+  if(v > 0) vt += `。持ち上げた重さの合計は <b>${Math.round(v).toLocaleString()}kg</b>`;
   if(same && v > 0){
     const pi = state.days[same].workout.items, names = new Set(pi.map(x => x.name));
     const cv = vol(w.items.filter(x => names.has(x.name))), pv = vol(pi.filter(x => w.items.some(y => y.name === x.name)));
     if(pv > 0){ const r = Math.round((cv / pv - 1) * 100); if(r > 0) vt += `（前回の${esc(w.menuName)}とくらべて <b>+${r}%</b>）`; } }
-  lines.push(vt + "。");
-  const cnt = {}; w.items.forEach(it => { const p = PART_OF[kindOf(it.name)]; if(p) cnt[p] = (cnt[p] || 0) + it.sets; });
-  const parts = Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a]);
-  if(parts.length) lines.push(PART[parts[0]][1]);
+  good.push(vt + "！");
   const ws = weekStart(date), n = Object.keys(state.days).filter(d => d <= date && weekStart(d) === ws && state.days[d].workout).length, g = goal();
-  if(n === g) lines.push(`これで今週${g}回目、<b>目標クリア</b>やワン！`);
-  else if(n < g) lines.push(`今週${n}回目。目標まであと${g - n}回やワン。`);
-  else lines.push(`今週${n}回目！目標以上にがんばってるやん。休む日もちゃんと作ってな。`);
-  return { head, lines };
+  if(n === g) good.push(`これで今週${g}回目、<b>目標クリア</b>やワン！`);
+  else if(n < g) good.push(`今週${n}回目。目標まであと${g - n}回やワン。`);
+  else good.push(`今週${n}回目！目標以上にがんばってるやん。`);
+  // ---- where it worked ----
+  const mus = {}, partSets = {};
+  w.items.forEach(it => { const k = kindOf(it.name);
+    (MUSCLE[k] || []).forEach(m => mus[m] = (mus[m] || 0) + it.sets);
+    const p = PART_OF[k]; if(p) partSets[p] = (partSets[p] || 0) + it.sets; });
+  const muscles = Object.keys(mus).map(m => ({ m, n: mus[m] })).sort((a, b) => b.n - a.n).slice(0, 5);
+  const parts = Object.keys(partSets).sort((a, b) => partSets[b] - partSets[a]);
+  const note = parts.length ? PART[parts[0]][1] : "";
+  // ---- advice for next time ----
+  const advice = [];
+  const flagged = w.items.filter(it => it.up).map(it => esc(it.name));
+  if(flagged.length) advice.push(`次は <b>${flagged.join("・")}</b> の重さを上げる日やで。もう上げた重さで入れとくワン。`);
+  const ready = w.items.filter(it => !it.up && it.kg > 0 && it.reps >= 12).map(it => esc(it.name)).slice(0, 2);
+  if(ready.length) advice.push(`${ready.join("・")}は12回以上できてるから、そろそろ重さを上げてもええ頃や。余裕があったら上の「次は上げる」を押しといてな。`);
+  const weekParts = new Set();
+  Object.keys(state.days).filter(d => d <= date && d > addDays(date, -7) && state.days[d].workout)
+    .forEach(d => state.days[d].workout.items.forEach(it => { const p = PART_OF[kindOf(it.name)]; if(p) weekParts.add(p); }));
+  const miss = ["lower", "push", "pull"].filter(p => !weekParts.has(p));
+  const menuFor = p => menus().find(m => { const c = {}; m.items.forEach(it => { const q = PART_OF[kindOf(it.name)]; if(q) c[q] = (c[q] || 0) + 1; });
+    return Object.keys(c).sort((a, b) => c[b] - c[a])[0] === p; });
+  const mf = miss.length ? menuFor(miss[0]) : null;
+  if(miss.length) advice.push(`この1週間、まだ<b>${miss.map(p => PART[p][0]).join("・")}</b>をやってへんで。次は${mf ? `「${esc(mf.name)}」` : "そこを鍛えるメニュー"}がおすすめや。`);
+  if(parts.length) advice.push(`きょう使った${PART[parts[0]][0]}は、2日くらい休ませると回復して強なるで。あしたは別のところか、休みにしよか。`);
+  if(!flagged.length && !ready.length) advice.push("どの種目も「ラスト1〜2回がきつい」くらいがちょうどええ重さや。楽やった種目には「次は上げる」を付けてな。");
+  return { head, good, muscles, note, advice: advice.slice(0, 3), ai: w.ai || null };
+}
+
+/* ---- deeper analysis from Claude, only where the page can ask Claude (not in the public copy) ---- */
+const aiPending = {};
+async function askCoach(date){
+  const w = (state.days[date] || {}).workout; if(!sampleFn || !w || aiPending[date]) return;
+  aiPending[date] = true; if(state.date === date) renderToday();
+  const at = w.at;
+  const lines = w.items.map(it => { const l = lastFor(it.name, date);
+    return `- ${it.name}: ${kgTxt(it.kg)} × ${it.reps}回 × ${it.sets}セット` + (l ? `（前回 ${kgTxt(l.kg)} × ${l.reps}回 × ${l.sets}セット）` : "（はじめて）") + (it.up ? "［本人が次回重さを上げる予定］" : ""); }).join("\n");
+  const ws = weekStart(date), n = Object.keys(state.days).filter(d => d <= date && weekStart(d) === ws && state.days[d].workout).length;
+  const prompt = `あなたは「シュナマル」。シュナウザーとマルチーズのミックス犬のキャラクターで、筋トレのパーソナルトレーナーです。
+相手は野球が好きな成人男性。週${goal()}回・1回1時間くらい筋トレしています。きょう${md(date)}の「${w.menuName || "フリー"}」の記録:
+${lines}
+今週${n}回目（目標は週${goal()}回）。
+関西弁で、語尾にときどき「ワン」をつけて、次のJSONだけを出力してください（説明文やコードブロックは不要）:
+{"praise": "具体的な数字を入れてほめる（60字以内）", "effect": "きょうの内容がどの筋肉に効いて、野球のどんな動きに役立つか（80字以内）", "advice": "次回どうするとよいか、重さ・回数・休みの取り方など具体的に1〜2つ（90字以内）"}
+専門用語はやさしく言い換える。医療的な断定はしない。記録にない種目には触れない。`;
+  try{
+    const r = await sampleFn.json(prompt, { cache: false });
+    const cur = (state.days[date] || {}).workout;
+    if(r && cur && cur.at === at){
+      cur.ai = { praise: String(r.praise || "").slice(0, 120), effect: String(r.effect || "").slice(0, 160), advice: String(r.advice || "").slice(0, 180) };
+      saveDay(date);
+    }
+  }catch(e){ if(e && (e.code === "not_granted" || e.code === "sampling_disabled")) sampleFn = null; }
+  aiPending[date] = false; if(state.date === date) renderToday();
+}
+function analysisHTML(date){
+  const a = analyze(date); if(!a) return "";
+  const max = a.muscles.length ? a.muscles[0].n : 1;
+  const ai = a.ai ? `<div class="sec"><h3>シュナマルのくわしい分析</h3><div class="ai"><div><b>ほめ</b>　${esc(a.ai.praise)}</div><div><b>効き目</b>　${esc(a.ai.effect)}</div><div><b>次は</b>　${esc(a.ai.advice)}</div></div></div>`
+    : aiPending[date] ? `<div class="sec"><h3>シュナマルのくわしい分析</h3><div class="note muted">シュナマルがきょうの内容をじっくり見てるで…</div></div>` : "";
+  return `<div class="top"><div class="av" aria-hidden="true">${MASCOT}</div><div class="hd">${esc(a.head)}</div></div>` +
+    `<div class="sec"><h3>ほめポイント</h3><ul>${a.good.map(l => `<li>${l}</li>`).join("")}</ul></div>` +
+    (a.muscles.length ? `<div class="sec"><h3>きょう効いたところ</h3><div class="mbars">${a.muscles.map(x =>
+      `<div class="mbar"><span>${esc(x.m)}</span><span class="tr"><span class="fl" style="width:${Math.round(x.n / max * 100)}%"></span></span><span class="n">${x.n}セット</span></div>`).join("")}</div>` +
+      (a.note ? `<div class="note">${a.note}</div>` : "") + `</div>` : "") +
+    `<div class="sec"><h3>次へのアドバイス</h3><ul>${a.advice.map(l => `<li>${l}</li>`).join("")}</ul></div>` + ai;
 }
 
 /* ---------- render: scoreboard ---------- */
@@ -608,8 +683,7 @@ function renderToday(){
     $("#woViewList").innerHTML = w.items.map((it, i) => `<div class="sum"><span class="nm">${ico(it.name, true)}${esc(it.name)}</span><span class="rt"><span class="num">${itemTxt(it)}</span>` +
       `<button class="upflag" data-vup="${i}" aria-pressed="${!!it.up}">${it.up ? "↑ 次は上げる" : "次は上げる？"}</button></span></div>`).join("") +
       `<div class="uphint" style="margin-top:6px">余裕があった種目に「次は上げる」を付けとくと、次は重さ上げた状態で出てくるワン。</div>`;
-    const pz = praise(state.date);
-    $("#woPraise").innerHTML = `<div class="av" aria-hidden="true">${MASCOT}</div><div><div class="hd">${esc(pz.head)}</div><ul>${pz.lines.map(l => `<li>${l}</li>`).join("")}</ul></div>`;
+    $("#woPraise").innerHTML = analysisHTML(state.date);
     const del = $("#woDel"); delete del.dataset.armed; del.textContent = "消す";
   } else {
     $("#menuChips").innerHTML = menus().map(m => `<button class="chip" data-menu="${esc(m.id)}" aria-pressed="${m.id === draft.menuId}">${esc(m.name)}</button>`).join("");
@@ -764,6 +838,7 @@ $("#woSave").addEventListener("click", () => {
   const day = state.days[state.date] || (state.days[state.date] = { date: state.date });
   day.workout = { menuId: draft.menuId || "", menuName: draft.menuName || "", items, at: Date.now() };
   saveDay(state.date); editing = false; draft = null; render(); toast("記録したワン！");
+  askCoach(state.date);
   const pc = $("#woCard"); if(pc.scrollIntoView) pc.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
 });
 $("#woViewList").addEventListener("click", e => {
